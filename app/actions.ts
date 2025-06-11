@@ -40,7 +40,7 @@ const createCoverPage = (
   doc: jsPDF,
   pageWidth: number,
   textColor: Array<number>,
-  heading: any
+  heading: string
 ) => {
   const primaryColor = [50, 66, 155]; // #32429B in RGB
 
@@ -211,7 +211,7 @@ export const generateBackgroundCheckPDF = (
       // Summary (wrapped)
       doc.setFont("helvetica", "normal").setFontSize(11);
       const sumLines = doc.splitTextToSize(e.summary, secW - padding * 2);
-      sumLines.forEach((line: any) => {
+      sumLines.forEach((line: string) => {
         doc.text(line, secX + padding, y);
         y += lineHeight;
       });

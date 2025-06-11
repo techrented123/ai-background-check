@@ -1,3 +1,5 @@
+/*eslint-disable @typescript-eslint/no-explicit-any*/
+
 import OpenAI from "openai";
 import { ProspectInfo, BackgroundCheckResult } from "../../../types";
 import { NextRequest } from "next/server";
@@ -110,23 +112,30 @@ export async function POST(request: NextRequest) {
       prospect: formData,
       newsArticles: {
         found: openAIResult.press_mentions.length > 0,
-        articles: openAIResult.press_mentions.map((mention: any) => ({
-          title: mention.topic,
-          date: mention.date,
-          source: "Web Search",
-          summary: mention.description,
-        })),
+        articles: openAIResult.press_mentions.map(
+          (mention: { date: string; description: string; topic: string }) => ({
+            title: mention.topic,
+            date: mention.date,
+            source: "Web Search",
+            summary: mention.description,
+          })
+        ),
         // recommendation: openAIResult.short_summary,
       },
       legalAppearances: {
         found: openAIResult.legal_appearances.length > 0,
-        cases: openAIResult.legal_appearances.map((appearance: any) => ({
-          caseNumber: Math.random().toString(36).substring(2, 10).toUpperCase(),
-          date: appearance.date,
-          court: appearance.location,
-          type: appearance.title,
-          status: "Recorded",
-        })),
+        cases: openAIResult.legal_appearances.map(
+          (appearance: { date: string; location: string; title: string }) => ({
+            caseNumber: Math.random()
+              .toString(36)
+              .substring(2, 10)
+              .toUpperCase(),
+            date: appearance.date,
+            court: appearance.location,
+            type: appearance.title,
+            status: "Recorded",
+          })
+        ),
         recommendation:
           openAIResult.legal_appearances.length > 0
             ? "Review any legal proceedings carefully and consider their relevance to the application."
@@ -134,22 +143,26 @@ export async function POST(request: NextRequest) {
       },
       socialMedia: {
         found: openAIResult.social_media_profiles.length > 0,
-        profiles: openAIResult.social_media_profiles.map((profile: any) => ({
-          platform: profile.platform,
-          url: profile.link,
-          summary: "Profile found through web search",
-        })),
+        profiles: openAIResult.social_media_profiles.map(
+          (profile: { platform: string; link: string }) => ({
+            platform: profile.platform,
+            url: profile.link,
+            summary: "Profile found through web search",
+          })
+        ),
         recommendation:
           "Review social media presence for professional conduct and consistency.",
       },
       businessAssociations: {
         found: openAIResult.company_registrations.length > 0,
-        companies: openAIResult.company_registrations.map((company: any) => ({
-          name: company.name,
-          role: "Associated",
-          status: "Found in Records",
-          registrationDate: new Date().toISOString().split("T")[0],
-        })),
+        companies: openAIResult.company_registrations.map(
+          (company: { name: string }) => ({
+            name: company.name,
+            role: "Associated",
+            status: "Found in Records",
+            registrationDate: new Date().toISOString().split("T")[0],
+          })
+        ),
         recommendation:
           "Verify current status of business associations and assess potential impacts.",
       },
@@ -193,7 +206,7 @@ function determineRiskLevel(data: any): "low" | "medium" | "high" {
   // Increase risk score based on various factors
   if (data.legal_appearances.length > 0) riskScore += 3;
   if (
-    data.press_mentions.some((m: any) =>
+    data.press_mentions.some((m: { description: string }) =>
       m.description.toLowerCase().includes("negative")
     )
   )
