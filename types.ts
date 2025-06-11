@@ -6,6 +6,7 @@ export interface ProspectInfo {
   state: string;
   city2: string | undefined;
   state2: string | undefined;
+  dob: string;
   lengthOfStay: "yes" | "no";
 }
 
