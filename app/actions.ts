@@ -1,6 +1,6 @@
 import { BackgroundCheckResult } from "@/types";
 import { jsPDF } from "jspdf";
-import logo from "@/assets/logo.png";
+import logo from "@/public/logo.png";
 
 interface SectionEntry {
   header: string;
