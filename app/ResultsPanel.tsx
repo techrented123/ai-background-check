@@ -1,7 +1,7 @@
 import React from "react";
 import { BackgroundCheckResult } from "@/types";
 import { Download, FileText } from "./_components/ui/icons";
-//import { generateBackgroundCheckPDF } from "@/lib/pdfService";
+import { generateBackgroundCheckPDF } from "./actions";
 
 interface ResultsPanelProps {
   results: BackgroundCheckResult | null;
@@ -11,7 +11,7 @@ interface ResultsPanelProps {
 const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
   const handleDownloadPDF = () => {
     if (results) {
-      //generateBackgroundCheckPDF(results, true);
+      generateBackgroundCheckPDF(results, true);
     }
   };
 
@@ -27,7 +27,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
         return "bg-gray-100 text-gray-800";
     }
   };
-
+  console.log({ results });
   if (isLoading) {
     return (
       <div className="h-full flex flex-col items-center justify-center py-12">
@@ -72,11 +72,9 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
     results.socialMedia.found;
 
   return (
-    <div className="!max-h-[370px]">
+    <div className="!max-h-[370px] md:!max-h-[490px] md:overflow-auto">
       <div className="flex flex-col md:flex-row gap-4 md:justify-between items-center mb-6 ">
         <div className="hidden md:flex">
-          {/*           <FileText className="h-6 w-6 text-blue-700 mr-2" />
-           */}{" "}
           <h2 className="md:text-xl font-semibold text-gray-800 ">
             Background Check Results
           </h2>
@@ -84,7 +82,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
         {showDownloadButton && (
           <button
             onClick={handleDownloadPDF}
-            className="text-md md:text-lg w-fit flex items-center text-center px-3 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors"
+            className="text-md md:text-lg w-fit cursor-pointer flex items-center text-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
           >
             <Download className="h-4 w-4 mr-2" />
             Download PDF
