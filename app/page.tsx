@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
 import { Form } from "./_components/Form";
+import Header from "./_components/Header";
 
 export default function BackgroundCheck() {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,6 +13,7 @@ export default function BackgroundCheck() {
     email: "",
     city: "",
     state: "",
+    dob: "",
     city2: "",
     state2: "",
     lengthOfStay: "yes",
@@ -77,28 +79,41 @@ export default function BackgroundCheck() {
     }
   };
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [results]);
   return (
-    <main
-      className={`md:container mx-auto md:px-4 px-1 py-3 md:py-8 ${
-        results ? "h-[500px]" : "max-h-[60vh]"
-      }`}
-    >
-      <div className="grid grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6 ">
-          <Form
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            onValidateForm={validateForm}
-            inputFields={inputFields}
-            errors={errors}
-            toggleErrors={toggleErrors}
-          />
-        </div>
+    <div>
+      <Header />
+      <main
+        className={`md:container mx-auto md:px-4 px-1 py-3 md:py-8 ${
+          results ? "h-[500px]" : "max-h-[60vh]"
+        }`}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
+            AI Powered Background Verification
+          </p>
+          <div
+            className={`bg-white rounded-lg md:shadow-md p-6 pt-0 ${
+              results ? "hidden md:block" : ""
+            } `}
+          >
+            <Form
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              onValidateForm={validateForm}
+              inputFields={inputFields}
+              errors={errors}
+              toggleErrors={toggleErrors}
+            />
+          </div>
 
-        <div className="bg-white rounded-lg p-1 md:p-6 shadow-md">
-          <ResultsPanel results={results} isLoading={isLoading} />
+          <div className="bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0">
+            <ResultsPanel results={results} isLoading={isLoading} />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
