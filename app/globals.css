@@ -1,18 +1,23 @@
 @import "tailwindcss";
 
-:root {
+@layer base {
+  :root {
+    --primary-color:#293074
+    --tw-ring-color: #293074;
+    --tw-font-weight: 600;
+  }
 }
-
 @theme inline {
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --tw-ring-color: #293074;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
 }
