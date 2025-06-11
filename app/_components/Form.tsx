@@ -8,7 +8,7 @@ interface BackgroundCheckFormProps {
   isLoading: boolean;
   onValidateForm: (formData: ProspectInfo) => boolean;
   inputFields: ProspectInfo;
-  errors: any;
+  errors: Record<string, string>;
   toggleErrors: (name: string) => void;
 }
 
@@ -21,7 +21,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
   toggleErrors,
 }) => {
   const [formData, setFormData] = useState<ProspectInfo>({ ...inputFields });
-  const [hideForm, setHideForm] = useState(false);
 
   const today = new Date();
   today.setFullYear(today.getFullYear() - 18);
@@ -45,7 +44,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onValidateForm(formData)) {
-      setHideForm(true);
       onSubmit(formData);
     }
   };
