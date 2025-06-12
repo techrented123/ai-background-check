@@ -9,7 +9,18 @@ export interface ProspectInfo {
   dob: string;
   lengthOfStay: "yes" | "no";
 }
+interface OtherOnlineActivty {
+  note: string;
+  link: string;
+  platform: string;
+}
 
+interface OnlinePublicComments {
+  date: string;
+  platform: string;
+  content: string;
+  link: string;
+}
 export interface BackgroundCheckResult {
   id: string;
   timestamp: string;
@@ -55,7 +66,11 @@ export interface BackgroundCheckResult {
   };
   onlineActivity: {
     found: boolean;
-    details: string;
+    details: {
+      others: Array<OtherOnlineActivty>;
+      public_comments: Array<OnlinePublicComments>;
+    };
+    fallback: string;
     recommendation: string;
   };
   riskLevel: "low" | "medium" | "high";
