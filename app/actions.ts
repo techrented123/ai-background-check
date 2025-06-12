@@ -295,16 +295,27 @@ export const generateBackgroundCheckPDF = (
     : [{ header: "", title: "No business associations found.", summary: "" }];
   drawSection("Business Associations", bizEntries);
 
-  const onlineEntries: SectionEntry[] = results.onlineActivity.found
-    ? [
-        {
-          header: "",
-          title: "Online Activity",
-          summary: results.onlineActivity.details,
-        },
-      ]
+  const onlineEntries1: SectionEntry[] = results.onlineActivity.details
+    .public_comments.length
+    ? results.onlineActivity.details.public_comments.map((comm) => ({
+        header: "",
+        title: `${comm.platform} ${comm.date}`,
+        summary: `${comm.content}`,
+        url: comm.link,
+      }))
     : [{ header: "", title: "No online activity found.", summary: "" }];
-  drawSection("Online Activity", onlineEntries);
+  drawSection("Online Activity", onlineEntries1);
+
+  const onlineEntries2: SectionEntry[] = results.onlineActivity.details.others
+    .length
+    ? results.onlineActivity.details.others.map((comm) => ({
+        header: "",
+        title: `${comm.platform}`,
+        summary: `${comm.note}`,
+        url: comm.link,
+      }))
+    : [{ header: "", title: "", summary: "" }];
+  drawSection("Other Online Activity", onlineEntries2);
 
   drawSection("Overall Recommendation", [
     { header: "", title: "", summary: results.overallRecommendation },
