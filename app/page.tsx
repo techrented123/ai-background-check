@@ -105,10 +105,6 @@ export default function BackgroundCheck() {
     }
   }, []);
 
-  React.useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [results]);
-
   /*   React.useEffect(() => {
     if (!token) {
       router.push("/404");
@@ -129,11 +125,7 @@ export default function BackgroundCheck() {
           <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
             AI Powered Background Verification
           </p>
-          <div
-            className={`bg-white rounded-lg md:shadow-md p-6 pt-0 ${
-              results ? "hidden md:block" : ""
-            } `}
-          >
+          <div className={`bg-white rounded-lg md:shadow-md p-6 pt-0`}>
             <Form
               onSubmit={handleSubmit}
               isLoading={isLoading}
