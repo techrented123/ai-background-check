@@ -105,14 +105,14 @@ export default function BackgroundCheck() {
     }
   }, []);
 
-  /*   React.useEffect(() => {
+  React.useEffect(() => {
     if (!token) {
-      router.push("/404");
+      //router.push("/404");
     } else {
-      verifyToken(token);
+      //verifyToken(token);
     }
   }, [token, verifyToken, router]);
- */
+  console.log(activeToken);
   return (
     <div>
       <Header />
