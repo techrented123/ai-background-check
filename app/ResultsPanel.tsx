@@ -2,6 +2,7 @@ import React from "react";
 import { BackgroundCheckResult } from "@/types";
 import { Download, FileText } from "./_components/ui/icons";
 import { generateBackgroundCheckPDF } from "./actions";
+import Tooltip from "./_components/ui/Tooltip/Tooltip";
 
 interface ResultsPanelProps {
   results: BackgroundCheckResult | null;
@@ -27,10 +28,12 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
         return "bg-gray-100 text-gray-800";
     }
   };
-  console.log({ results });
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center py-12">
+      <div className="h-full flex flex-col items-center justify-center py-6">
+        <p className="mb-4 text-gray-600">
+          Generating AI background check results...
+        </p>
         <div className="animate-pulse w-full max-w-md">
           <div className="h-8 bg-gray-200 rounded mb-4"></div>
           <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
@@ -39,12 +42,8 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
           <div className="h-24 bg-gray-200 rounded-lg mb-4"></div>
           <div className="h-24 bg-gray-200 rounded-lg mb-4"></div>
           <div className="h-24 bg-gray-200 rounded-lg mb-4"></div>
-
           <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
         </div>
-        <p className="mt-4 text-gray-600">
-          Generating AI background check results...
-        </p>
       </div>
     );
   }
@@ -64,7 +63,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
       </div>
     );
   }
-  const showDownloadButton =
+  const foundResult =
     results.businessAssociations.found ||
     results.legalAppearances.found ||
     results.newsArticles.found ||
@@ -79,7 +78,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
             Background Check Results
           </h2>
         </div>
-        {showDownloadButton && (
+        {foundResult && (
           <button
             onClick={handleDownloadPDF}
             className="text-md md:text-lg w-fit cursor-pointer flex items-center text-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
@@ -95,15 +94,17 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
           <h3 className="text-lg font-medium">
             {results.prospect.firstName} {results.prospect.lastName}
           </h3>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${getRiskColor(
-              results.riskLevel
-            )}`}
-          >
-            {results.riskLevel.charAt(0).toUpperCase() +
-              results.riskLevel.slice(1)}{" "}
-            Risk
-          </span>
+          <Tooltip text="This is only an estimated calculation and should be treated as such">
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${getRiskColor(
+                results.riskLevel
+              )}`}
+            >
+              {results.riskLevel.charAt(0).toUpperCase() +
+                results.riskLevel.slice(1)}{" "}
+              Risk
+            </span>
+          </Tooltip>
         </div>
         <p className="text-gray-600 text-sm">
           {results.prospect.city}, {results.prospect.state},{" "}
@@ -245,9 +246,45 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
             <h4 className="font-medium">Online Activity</h4>
           </div>
           <div className="p-4">
-            <p className="text-gray-600 mb-3">
-              {results.onlineActivity.details}
-            </p>
+            <div className="mb-3">
+              {results.onlineActivity.details.public_comments.length &&
+                results.onlineActivity.details.public_comments.map(
+                  (comment, index) => (
+                    <div key={index}>
+                      <h5 className="font-medium text-black flex justify-between">
+                        <a
+                          href={comment.link}
+                          target="_blank"
+                          className={`${comment.link ? "underline" : ""}`}
+                        >
+                          {comment.platform}{" "}
+                        </a>
+                      </h5>
+                      <p className="text-sm text-gray-600">
+                        Web Search • {comment.date}
+                      </p>
+                      <p className="text-sm mt-1">{comment.content}</p>
+                    </div>
+                  )
+                )}
+            </div>
+            <div>
+              {results.onlineActivity.details.others.map((item, index) => (
+                <div key={index}>
+                  <h5 className="font-medium text-black flex justify-between">
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      className={`${item.link ? "underline" : ""}`}
+                    >
+                      {item.platform}{" "}
+                    </a>
+                  </h5>
+                  <p className="text-sm mt-1">{item.note}</p>
+                </div>
+              ))}
+              {!results.onlineActivity.found && results.onlineActivity.fallback}
+            </div>
             <p className="text-sm font-medium">
               {results.onlineActivity.recommendation}
             </p>
@@ -259,6 +296,10 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
         <h4 className="font-medium mb-2">Overall Recommendation</h4>
         <p className="text-gray-800">{results.overallRecommendation}</p>
       </div>
+      <p className="text-center text-xs mt-2 text-black">
+        {" "}
+        AI can make mistakes. Some results may be incorrect
+      </p>
     </div>
   );
 };

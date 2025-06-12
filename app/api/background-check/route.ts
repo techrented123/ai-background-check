@@ -20,16 +20,16 @@ const instructions = `You are an automated public‐profile investigator. When g
    • Public comments, blog posts, forums, or other online activity  
    • Anything else that may reflect positively or negatively on their character  
 
-3. Always verify that each URL returned is live and points to the correct person.  
+3. Always verify that each URL returned is live and points to the correct person. *Some URLs returned in the past were incorrect*  
 
 4. Return exactly one JSON object with these keys (no extra text):
    {
      "press_mentions": [ { "date":"YYYY-MM-DD", "topic":"", "description":"", "link":"" } ],
      "legal_appearances": [ { "date":"YYYY-MM-DD", "title":"", "description":"", "location":"", "plaintiff":"", "link":"" } ],
-     "social_media_profiles": [ { "platform":"LinkedIn|Facebook|Twitter|Instagram", "link":"" } ],
+     "social_media_profiles": [ { "platform":"", "link":"" } ],
      "company_registrations": [ { "name":"", "link":"" } ],
      "public_comments": [ { "date":"YYYY-MM-DD", "platform":"", "content":"", "link":"" } ],
-     "others": [ { "note":"", "link":"" } ],
+     "others": [ { "note":"", "link":"","platform":"" } ],
      "short_summary": ""
    }
 
@@ -167,18 +167,20 @@ export async function POST(request: NextRequest) {
           "Verify current status of business associations and assess potential impacts.",
       },
       onlineActivity: {
-        found: Boolean(openAIResult.public_comments || openAIResult.others),
-        details:
-          openAIResult.public_comments ||
-          openAIResult.others ||
-          "No significant online activity found.",
+        found: Boolean(
+          openAIResult.public_comments.length || openAIResult.others.length
+        ),
+        details: {
+          others: openAIResult.others,
+          public_comments: openAIResult.public_comments,
+        },
+        fallback: "No significant online activity found.",
         recommendation:
           "Consider the overall online presence and its relevance to the application.",
       },
       riskLevel: determineRiskLevel(openAIResult),
       overallRecommendation: openAIResult.short_summary,
     };
-
     return new Response(JSON.stringify(result), {
       headers: {
         "Content-Type": "application/json",
