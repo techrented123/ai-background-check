@@ -6,7 +6,7 @@ const Tooltip = ({
   children,
 }: {
   text: string | React.ReactNode;
-  children: any;
+  children: React.ReactNode;
 }) => {
   const [visible, setVisible] = useState(false);
 

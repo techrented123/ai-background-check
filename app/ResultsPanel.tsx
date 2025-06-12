@@ -56,7 +56,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ results, isLoading }) => {
         <h3 className="text-xl font-semibold text-gray-700 mb-2">
           No Results Yet
         </h3>
-        <p className="text-gray-500 text-center max-w-md">
+        <p className="text-gray-500 text-center max-w-xs">
           Submit prospect information on the left to generate a comprehensive
           background check report.
         </p>
