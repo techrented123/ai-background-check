@@ -24,7 +24,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     if (window.innerWidth <= 768 && error) {
       window.scrollTo(0, document.body.scrollHeight);
     }
-  }, [window, error]);
+  }, [error]);
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {

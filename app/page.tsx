@@ -4,10 +4,18 @@ import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
 import { Form } from "./_components/Form";
 import Header from "./_components/Header";
+import { getToken } from "./actions";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
+  const [activeToken, setActiveToken] = useState("");
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const router = useRouter();
+
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [results, setResults] = useState<BackgroundCheckResult | null>(null);
 
   const inputFields: ProspectInfo = {
     firstName: "",
@@ -20,11 +28,9 @@ export default function BackgroundCheck() {
     state2: "",
     lengthOfStay: "yes",
   };
-
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProspectInfo, string>>
   >({});
-
   const toggleErrors = (name: string) => {
     setErrors((prev) => ({
       ...prev,
@@ -59,9 +65,19 @@ export default function BackgroundCheck() {
     return isValid;
   };
 
-  const [results, setResults] = useState<BackgroundCheckResult | null>(null);
+  const verifyToken = React.useCallback(
+    async (token: string | null) => {
+      const activeToken = await getToken(token as string);
+      if (!activeToken || activeToken.product !== "ai-check")
+        router.push("/404");
+      else {
+        setActiveToken(activeToken.token);
+      }
+    },
+    [router]
+  );
 
-  const handleSubmit = async (prospectInfo: ProspectInfo) => {
+  const handleSubmit = React.useCallback(async (prospectInfo: ProspectInfo) => {
     setIsLoading(true);
 
     try {
@@ -87,11 +103,20 @@ export default function BackgroundCheck() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [results]);
+
+  /*   React.useEffect(() => {
+    if (!token) {
+      router.push("/404");
+    } else {
+      verifyToken(token);
+    }
+  }, [token, verifyToken, router]);
+ */
   return (
     <div>
       <Header />
