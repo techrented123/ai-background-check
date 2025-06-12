@@ -7,6 +7,8 @@ import Header from "./_components/Header";
 
 export default function BackgroundCheck() {
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const inputFields: ProspectInfo = {
     firstName: "",
     lastName: "",
@@ -70,10 +72,18 @@ export default function BackgroundCheck() {
         },
         body: JSON.stringify({ ...prospectInfo }),
       });
+      if (!response.ok)
+        throw new Error("A network error occured. Please try again");
       const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
       setResults(data);
     } catch (error) {
       console.error("Error performing background check:", error);
+      setApiError(
+        error instanceof Error ? error.message : "Something Unexpected Happened"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +122,11 @@ export default function BackgroundCheck() {
           <div
             className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0`}
           >
-            <ResultsPanel results={results} isLoading={isLoading} />
+            <ResultsPanel
+              results={results}
+              isLoading={isLoading}
+              error={apiError}
+            />
           </div>
         </div>
       </main>
