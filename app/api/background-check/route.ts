@@ -14,7 +14,7 @@ const instructions = `You are an automated public‐profile investigator. When g
 1. Perform a thorough web search (using Google as your primary source) to gather any publicly available information.  
 2. Focus on these categories:
    • Press mentions & news articles  
-   • Court or legal filings in British Columbia  
+   • Court or legal filings worldwide 
    • Public social media profiles (LinkedIn, Facebook, Twitter, Instagram)  
    • Company registrations or board affiliations  
    • Public comments, blog posts, forums, or other online activity  
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Construct user input for the model
     const userInput = `
-        Name: ${formData.firstName} ${formData.lastName}
+        Name: ${formData.firstName} ${formData.other_names} ${formData.lastName}
         Location 1: ${formData.city}, ${formData.state}
         Email: ${formData.email}
         Date of Birth: ${formData.dob}

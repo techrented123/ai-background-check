@@ -20,6 +20,7 @@ export default function BackgroundCheck() {
   const inputFields: ProspectInfo = {
     firstName: "",
     lastName: "",
+    other_names: "",
     email: "",
     city: "",
     state: "",
@@ -123,7 +124,7 @@ export default function BackgroundCheck() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
-            AI Powered Background Verification
+            AI Intelligent Background Verification
           </p>
           <div className={`bg-white rounded-lg md:shadow-md p-6 pt-0`}>
             <Form
