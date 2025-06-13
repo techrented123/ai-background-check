@@ -126,6 +126,7 @@ export default function BackgroundCheck() {
   React.useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
+  console.log({ activeToken });
 
   return (
     <div>
