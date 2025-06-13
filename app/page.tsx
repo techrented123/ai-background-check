@@ -9,6 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
   const [activeToken, setActiveToken] = useState("");
+  const [retries, setRetries] = useState(0);
+
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
@@ -43,7 +45,12 @@ export default function BackgroundCheck() {
     let isValid = true;
 
     Object.entries(formData).forEach(([key, value]) => {
-      if (!value && key !== "city2" && key !== "state2") {
+      if (
+        !value &&
+        key !== "city2" &&
+        key !== "state2" &&
+        key !== "other_names"
+      ) {
         newErrors[key as keyof ProspectInfo] = "This field is required";
         isValid = false;
       }
@@ -80,7 +87,7 @@ export default function BackgroundCheck() {
 
   const handleSubmit = React.useCallback(async (prospectInfo: ProspectInfo) => {
     setIsLoading(true);
-
+    setRetries((prev) => (prev <= 2 ? prev + 1 : prev));
     try {
       const response = await fetch("/api/background-check", {
         method: "post",
@@ -108,12 +115,18 @@ export default function BackgroundCheck() {
 
   React.useEffect(() => {
     if (!token) {
-      //router.push("/404");
+      router.push("/404");
     } else {
-      //verifyToken(token);
+      verifyToken(token);
     }
+    const retries = localStorage.getItem("retries");
+    if (retries) setRetries(JSON.parse(retries));
   }, [token, verifyToken, router]);
-  console.log(activeToken);
+
+  React.useEffect(() => {
+    localStorage.setItem("retries", JSON.stringify(retries));
+  }, [retries]);
+
   return (
     <div>
       <Header />
@@ -134,6 +147,7 @@ export default function BackgroundCheck() {
               inputFields={inputFields}
               errors={errors}
               toggleErrors={toggleErrors}
+              retries={retries}
             />
           </div>
 
@@ -144,6 +158,7 @@ export default function BackgroundCheck() {
               results={results}
               isLoading={isLoading}
               error={apiError}
+              retries={retries}
             />
           </div>
         </div>

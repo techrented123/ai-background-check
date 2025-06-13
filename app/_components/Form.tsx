@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ProspectInfo } from "@/types";
 
 import { UserCheck, AlertCircle } from "./ui/icons";
+import Tooltip from "./ui/Tooltip/Tooltip";
 
 interface BackgroundCheckFormProps {
   onSubmit: (info: ProspectInfo) => void;
@@ -10,6 +11,7 @@ interface BackgroundCheckFormProps {
   inputFields: ProspectInfo;
   errors: Record<string, string>;
   toggleErrors: (name: string) => void;
+  retries: number;
 }
 
 export const Form: React.FC<BackgroundCheckFormProps> = ({
@@ -19,6 +21,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
   inputFields,
   errors,
   toggleErrors,
+  retries,
 }) => {
   const [formData, setFormData] = useState<ProspectInfo>({ ...inputFields });
 
@@ -105,14 +108,13 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           )}
         </div>
       </div>
-       <div className="grid grid-cols-1 gap-4">
-        
+      <div className="grid grid-cols-1 gap-4">
         <div>
           <label
             htmlFor="other_names"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-          Other Names
+            Other Names
           </label>
           <input
             type="text"
@@ -321,41 +323,53 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
         </div>
       )}
       <div className="mt-6">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 cursor-pointer text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors ${
-            isLoading ? "opacity-70 cursor-not-allowed" : ""
-          }`}
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Running Check...
-            </span>
-          ) : (
-            "Run Background Check"
-          )}
-        </button>
+        {retries >= 2 ? (
+          <Tooltip text="You have a max of 2 attempts">
+            <button
+              type="submit"
+              disabled
+              className={`w-full py-3 px-4 disabled:bg-gray-300 disabled:cursor-not-allowed  bg-blue-600 hover:bg-blue-500 cursor-pointer text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`}
+            >
+              Run Background Check
+            </button>
+          </Tooltip>
+        ) : (
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-3 px-4  bg-blue-600 hover:bg-blue-500 cursor-pointer text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors ${
+              isLoading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Running Check...
+              </span>
+            ) : (
+              "Run Background Check"
+            )}
+          </button>
+        )}
         <div className="flex items-start justify-center !gap-0 text-center text-sm text-gray-500 mt-3 ">
           <span className="md:hidden">
             You agree to Rented123 using AI to run a background check on you.{" "}

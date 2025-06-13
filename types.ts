@@ -1,7 +1,7 @@
 export interface ProspectInfo {
   firstName: string;
   lastName: string;
-  other_names: string;
+  other_names?: string;
   email: string;
   city: string;
   state: string;

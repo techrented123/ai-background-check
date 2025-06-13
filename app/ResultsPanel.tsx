@@ -8,12 +8,14 @@ interface ResultsPanelProps {
   results: BackgroundCheckResult | null;
   isLoading: boolean;
   error: string | null;
+  retries: number;
 }
 
 const ResultsPanel: React.FC<ResultsPanelProps> = ({
   results,
   isLoading,
   error,
+  retries,
 }) => {
   const handleDownloadPDF = () => {
     if (results) {
@@ -95,7 +97,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     results.newsArticles.found ||
     results.onlineActivity.found ||
     results.socialMedia.found;
-
+  console.log({ results });
   return (
     <div className="!max-h-[370px] md:!max-h-[490px] md:overflow-auto">
       <div className="flex flex-col md:flex-row gap-4 md:justify-between items-center mb-6 ">
@@ -104,17 +106,30 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
             Background Check Results
           </h2>
         </div>
-        {foundResult && (
-          <button
-            onClick={handleDownloadPDF}
-            className="text-md md:text-lg w-fit cursor-pointer flex items-center text-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </button>
-        )}
-      </div>
 
+        <button
+          onClick={handleDownloadPDF}
+          className="text-md md:text-lg w-fit cursor-pointer flex items-center text-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download PDF
+        </button>
+      </div>
+      {!foundResult && (
+        <div className="text-sm text-center mb-4 text-red-500">
+          We could not find any information on you.{" "}
+          {retries < 2 ? (
+            "Please try again"
+          ) : (
+            <a
+              href="mailto:tech@rented123.com,rob@rented123.com"
+              className="underline"
+            >
+              Please contact us
+            </a>
+          )}
+        </div>
+      )}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-lg font-medium">
@@ -132,8 +147,11 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
             </span>
           </Tooltip>
         </div>
+         <p className="text-gray-600 text-sm">
+         DOB:    {new Date(results.prospect.dob).toLocaleDateString()}
+        </p>
         <p className="text-gray-600 text-sm">
-          {results.prospect.city}, {results.prospect.state},{" "}
+          {results.prospect.city}, {results.prospect.state}{" "}
         </p>
 
         <p className="text-gray-600 text-sm">
@@ -273,45 +291,50 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           </div>
           <div className="p-4">
             <div className="mb-3">
-              {results.onlineActivity.details.public_comments.length &&
-                results.onlineActivity.details.public_comments.map(
-                  (comment, index) => (
-                    <div key={index}>
+              {!results.onlineActivity.found && (
+                <p className="text-gray-600">
+                  {" "}
+                  {results.onlineActivity.fallback}
+                </p>
+              )}
+              {results.onlineActivity.found &&
+              results.onlineActivity.details.public_comments.length
+                ? results.onlineActivity.details.public_comments.map(
+                    (comment, index) => (
+                      <div key={index}>
+                        <h5 className="font-medium text-black flex justify-between mb-4 last:mb-0">
+                          <a
+                            href={comment.link}
+                            target="_blank"
+                            className={`${comment.link ? "underline" : ""}`}
+                          >
+                            {comment.platform}{" "}
+                          </a>
+                        </h5>
+                        <p className="text-sm text-gray-600">
+                          Web Search • {comment.date}
+                        </p>
+                        <p className="text-sm mt-1">{comment.content}</p>
+                      </div>
+                    )
+                  )
+                : results.onlineActivity.details.others.map((item, index) => (
+                    <div key={index} className="mb-4 last:mb-0">
                       <h5 className="font-medium text-black flex justify-between">
                         <a
-                          href={comment.link}
+                          href={item.link}
                           target="_blank"
-                          className={`${comment.link ? "underline" : ""}`}
+                          className={`${item.link ? "underline" : ""}`}
                         >
-                          {comment.platform}{" "}
+                          {item.platform}{" "}
                         </a>
                       </h5>
-                      <p className="text-sm text-gray-600">
-                        Web Search • {comment.date}
-                      </p>
-                      <p className="text-sm mt-1">{comment.content}</p>
+                      <p className="text-sm mt-1">{item.note}</p>
                     </div>
-                  )
-                )}
+                  ))}
             </div>
-            <div>
-              {results.onlineActivity.details.others.map((item, index) => (
-                <div key={index}>
-                  <h5 className="font-medium text-black flex justify-between">
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      className={`${item.link ? "underline" : ""}`}
-                    >
-                      {item.platform}{" "}
-                    </a>
-                  </h5>
-                  <p className="text-sm mt-1">{item.note}</p>
-                </div>
-              ))}
-              {!results.onlineActivity.found && results.onlineActivity.fallback}
-            </div>
-            <p className="text-sm font-medium">
+
+            <p className="text-sm font-medium ">
               {results.onlineActivity.recommendation}
             </p>
           </div>
