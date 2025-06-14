@@ -8,7 +8,7 @@ import { getToken } from "./actions";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
-  const [activeToken, setActiveToken] = useState("");
+  const [, setActiveToken] = useState("");
   const [retries, setRetries] = useState(0);
 
   const searchParams = useSearchParams();
@@ -126,7 +126,6 @@ export default function BackgroundCheck() {
   React.useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
-  console.log({ activeToken });
 
   return (
     <div>

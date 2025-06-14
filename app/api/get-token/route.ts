@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
   try {
     const response = await fetch(
-      `${process.env.WORDPRESS_TOKEN_BASE_API}/get-token/?token=${token}`, // Send token as a query parameter
+      `${process.env.NEXT_PUBLIC_WORDPRESS_TOKEN_BASE_API}/get-token/?token=${token}`, // Send token as a query parameter
       {
         method: "GET",
         headers: {
