@@ -22,13 +22,14 @@ export default function NotFound() {
           404: Page Not Found
         </h1>
         <p className="text-gray-600 mb-6">
-          Oops! We can’t seem to find the page you’re looking for.
+          Oops! It seems like your token has expired.
         </p>
         <Link
-          href="/"
+          href="https://rented123.com/product/ai-background-check"
+          target="_blank"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
         >
-          Go Home
+          Get a New One
         </Link>
       </div>
     </div>
