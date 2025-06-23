@@ -97,8 +97,8 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     results.newsArticles.found ||
     results.onlineActivity.found ||
     results.socialMedia.found;
-  console.log({ results });
-  return (
+
+    return (
     <div className="!max-h-[370px] md:!max-h-[490px] md:overflow-auto">
       <div className="flex flex-col md:flex-row gap-4 md:justify-between items-center mb-6 ">
         <div className="hidden md:flex">
