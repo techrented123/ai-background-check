@@ -386,7 +386,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             check on you. Your personal information will not be stored anywhere.
             For more information, see our{" "}
             <a
-              href="https://rented123.com/"
+              href="https://rented123.com/privacy-policy/"
               className="underline"
               target="_blank"
             >
