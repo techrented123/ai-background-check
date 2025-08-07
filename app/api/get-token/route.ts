@@ -19,6 +19,13 @@ export async function GET(req: NextRequest) {
     "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET as string,
   };
 
+  console.log(
+    { url },
+    "clientid: ",
+    headers["CF-Access-Client-Id"],
+    "client-secret: ",
+    headers["CF-Access-Client-Secret"]
+  );
   // 3) Fetch
   const response = await fetch(url, { headers });
   const text = await response.text();
