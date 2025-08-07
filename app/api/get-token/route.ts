@@ -15,8 +15,10 @@ export async function GET(req: NextRequest) {
   )}`;
   const headers = {
     Accept: "application/json",
-    "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID as string,
-    "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET as string,
+    "CF-Access-Client-Id": process.env
+      .NEXT_PUBLIC_CF_ACCESS_CLIENT_ID as string,
+    "CF-Access-Client-Secret": process.env
+      .NEXT_PUBLIC_CF_ACCESS_CLIENT_SECRET as string,
   };
 
   console.log(
