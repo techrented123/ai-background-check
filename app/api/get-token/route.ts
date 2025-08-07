@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
   try {
     const data = JSON.parse(text);
     return NextResponse.json(data);
-  } catch (e) {
-    console.error("❌ JSON parse error:", e);
+  } catch (e) { 
+    console.error("❌  JSON parse error:", e);
     return NextResponse.json(
       { message: "Invalid JSON", details: text },
       { status: 500 }
