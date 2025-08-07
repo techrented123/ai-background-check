@@ -21,13 +21,6 @@ export async function GET(req: NextRequest) {
       .NEXT_PUBLIC_CF_ACCESS_CLIENT_SECRET as string,
   };
 
-  console.log(
-    { url },
-    "clientid: ",
-    headers["CF-Access-Client-Id"],
-    "client-secret: ",
-    headers["CF-Access-Client-Secret"]
-  );
   // 3) Fetch
   const response = await fetch(url, { headers });
   const text = await response.text();
@@ -39,7 +32,7 @@ export async function GET(req: NextRequest) {
   try {
     const data = JSON.parse(text);
     return NextResponse.json(data);
-  } catch (e) { 
+  } catch (e) {
     console.error("❌  JSON parse error:", e);
     return NextResponse.json(
       { message: "Invalid JSON", details: text },
