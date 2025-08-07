@@ -6,8 +6,13 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get("token") as string;
 
   // 2) Build URL & headers
-  const base = (process.env.WORDPRESS_TOKEN_BASE_API || "").replace(/\/+$/, "");
-  const url = `${base}/get-token/?token=${encodeURIComponent(token)}`;
+  const base = (process.env.NEXT_PUBLIC_WORDPRESS_BASE_API || "").replace(
+    /\/+$/,
+    ""
+  );
+  const url = `${base}/scan_id/v1/get-token/?token=${encodeURIComponent(
+    token
+  )}`;
   const headers = {
     Accept: "application/json",
     "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID as string,
