@@ -1,40 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token"); // Get the token from the query parameters
 
-  if (!token) {
-    return NextResponse.json({ message: "Token is required" }, { status: 400 });
+  const token = searchParams.get("token") as string;
+
+  // 2) Build URL & headers
+  const base = (process.env.WORDPRESS_TOKEN_BASE_API || "").replace(/\/+$/, "");
+  const url = `${base}/get-token/?token=${encodeURIComponent(token)}`;
+  const headers = {
+    Accept: "application/json",
+    "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID as string,
+    "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET as string,
+  };
+
+  // 3) Fetch
+  const response = await fetch(url, { headers });
+  const text = await response.text();
+
+  // 4) Parse or error
+  if (!response.ok) {
+    return NextResponse.json({ message: text }, { status: response.status });
   }
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WORDPRESS_TOKEN_BASE_API}/get-token/?token=${token}`, // Send token as a query parameter
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json", // Optional: Specify that you expect a JSON response
-        },
-      }
-    );
-    if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json(
-        {
-          message:
-            error.message || "Something went wrong. Please try again later",
-        },
-        { status: response.status || 500 }
-      );
-    }
-
-    const data = await response.json();
+    const data = JSON.parse(text);
     return NextResponse.json(data);
-  } catch (err) {
-    console.error("Could not fetch token:", err);
+  } catch (e) {
+    console.error("❌ JSON parse error:", e);
     return NextResponse.json(
-      { message: "An unexpected error occurred" },
+      { message: "Invalid JSON", details: text },
       { status: 500 }
     );
   }
