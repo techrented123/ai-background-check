@@ -78,7 +78,7 @@ Rules
 async function fetchViaChatGPT(formData: ProspectInfo) {
   const apiKey = process.env.OPEN_AI_API_KEY;
   const client = new OpenAI({ apiKey });
-
+  console.log({ apiKey });
   const userInput = `
 Begin investigation:
 Name: ${formData.firstName} ${formData.other_names || ""} ${formData.lastName}
@@ -291,7 +291,7 @@ async function fetchViaPDL(body: ProspectInfo) {
   }
 
   const apiKey = process.env.PDL_API_KEY;
-
+  console.log({ apiKey });
   // --- 3. Construct the request payload for the PDL API ---
   // We use the exact field names required by the PDL Identify API.
   const pdlParams = {
@@ -335,7 +335,6 @@ async function fetchViaPDL(body: ProspectInfo) {
       };
     }
     const matches = pdlData.matches;
-
 
     // --- 5. Handle the response from PDL ---
     // A status of 200 from PDL indicates a successful match was found.
