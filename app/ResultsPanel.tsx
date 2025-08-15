@@ -327,10 +327,10 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                         .filter(Boolean)
                         .join(", ");
 
-                const start =
+                /*   const start =
                   loc.start_date || loc.from || loc.start || loc.begin;
                 const end = loc.end_date || loc.to || loc.end;
-
+ */
                 return (
                   <li key={idx} className="text-sm">
                     <div className="flex justify-between">
