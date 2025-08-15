@@ -336,7 +336,6 @@ async function fetchViaPDL(body: ProspectInfo) {
     }
     const matches = pdlData.matches;
 
-    console.log({ matches });
 
     // --- 5. Handle the response from PDL ---
     // A status of 200 from PDL indicates a successful match was found.
@@ -345,7 +344,6 @@ async function fetchViaPDL(body: ProspectInfo) {
 
       if (matches.length > 1) {
         const firstMatch = matches.sort((a: any, b: any) => a - b)[0];
-        console.log({ firstMatch });
 
         return { ok: true, data: firstMatch };
       }
@@ -698,7 +696,6 @@ export async function POST(request: NextRequest) {
       gptSettled.status === "rejected" && pdlSettled.status === "rejected";
 
     const status = bothCrashed ? 502 : 200;
-    console.log({ ok, gpt, pdl }, { status });
     return NextResponse.json(
       {
         ok,

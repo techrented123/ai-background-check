@@ -99,7 +99,7 @@ export default function BackgroundCheck() {
         body: JSON.stringify({ ...prospectInfo }),
       });
       const raw = await response.text();
-      let data: any = null;
+      let data = null;
       try {
         data = raw ? JSON.parse(raw) : null;
       } catch {
@@ -115,7 +115,6 @@ export default function BackgroundCheck() {
           `A network error occurred (HTTP ${response.status}). Please try again.`;
         throw new Error(msg);
       }
-      console.log({ data });
 
       setResults(data);
     } catch (error) {

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as React from "react";
 import { BackgroundCheckResult, ProspectInfo } from "@/types";
 import { Download, FileText, InfoIcon } from "./_components/ui/icons";
@@ -72,7 +74,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       public_comments: gpt?.data?.public_comments ?? [],
       others: gpt?.data?.others ?? [],
     };
-
+    console.log(base.others);
     const meta = {
       gptOk: gpt?.ok,
       pdlOk: pdl?.ok,
@@ -169,7 +171,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         save: true, // default}
       });
     }
-  }, [results]);
+  }, [results, person, prospect, riskLevel]);
 
   /* Early returns AFTER all hooks */
   if (isLoading) {
@@ -245,7 +247,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
       {!foundResult && (
         <div className="text-sm text-center mb-4 text-red-500">
-          We couldn't find enough information about {prospect?.firstName}{" "}
+          We couldn&apos;t find enough information about {prospect?.firstName}{" "}
           {prospect?.lastName}.
           {retries < 2 ? (
             <> Please try again.</>

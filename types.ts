@@ -77,3 +77,5 @@ export interface BackgroundCheckResult {
   riskLevel: "low" | "medium" | "high";
   overallRecommendation: string;
 }
+
+

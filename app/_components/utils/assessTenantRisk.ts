@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // utils/risk.ts — UPDATED
 
 type ProviderMeta = {
