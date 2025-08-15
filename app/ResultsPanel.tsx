@@ -9,6 +9,10 @@ import { Section } from "./_components/ui/Section";
 import { riskBadgeClass } from "./_components/utils/riskBadge";
 import { assessTenantRisk } from "./_components/utils/assessTenantRisk";
 import { toAbsoluteUrl } from "./_components/utils/toAbsoluteURls";
+import {
+  buildPDLEnhancedSummary,
+  mergeSummaries,
+} from "./_components/utils/pdlSummary";
 
 type ResultsPanelProps = {
   results: BackgroundCheckResult | null;
@@ -64,7 +68,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       company_registrations: gpt?.data?.company_registrations ?? [],
       press_mentions: gpt?.data?.press_mentions ?? [],
       social_media_profiles: gpt?.data?.social_media_profiles ?? [],
-      location_history: gpt?.data?.location_history ?? [],
+      location_history: gpt?.data?.location_history ?? [], //
       public_comments: gpt?.data?.public_comments ?? [],
       others: gpt?.data?.others ?? [],
     };
@@ -111,7 +115,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       const pdlProfiles =
         pdlRoot?.profiles?.map((p: any) => ({
           platform: p?.network,
-          url: p?.url,
+          link: p?.url,
         })) ?? [];
 
       const includeGptEmployment =
@@ -131,10 +135,18 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         ? pdl.data.regions
         : [];
       base.location_history = [...base.location_history, ...extraRegions];
-      console.log({ pdlProfiles, gpt, base });
     }
+    const pdlSentence = buildPDLEnhancedSummary(
+      base,
+      `${prospect?.firstName ?? ""} ${prospect?.lastName ?? ""}`.trim()
+    );
+    //gpt?.data?.foundPerson ? gpt?.data?.short_summary : ""
+    base.short_summary = mergeSummaries(
+      gpt?.data?.foundPerson ? gpt?.data?.short_summary.trim() : "",
+      pdlSentence
+    );
+
     const { level, score, reasons } = assessTenantRisk(base, meta);
-    console.log({ base, level, score, reasons });
 
     return {
       person: base,
@@ -143,7 +155,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       riskScore: score,
       reasons: reasons,
     };
-  }, [results]);
+  }, [results, prospect]);
 
   const handleDownloadPDF = React.useCallback(() => {
     if (person && prospect) {
@@ -151,8 +163,8 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         subjectName: `${prospect.firstName} ${prospect.lastName}`,
         city: prospect.city,
         region: prospect.state,
-        reportId: "",
-        riskLevel: results?.riskLevel ?? "medium",
+        reportId: reportIdRef.current,
+        riskLevel: riskLevel ?? "medium",
         generatedAt: results?.timestamp ?? new Date().toISOString(),
         save: true, // default}
       });
@@ -287,6 +299,15 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
       {/* Content */}
       <div className="space-y-4">
+        {/* Summary */}
+        {foundResult && (
+          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-md p-4">
+            <h4 className="font-medium mb-2">Overall Summary</h4>
+            <p className="text-gray-800">
+              {person.short_summary || "No summary available."}
+            </p>
+          </div>
+        )}
         {/* Location History */}
         <Section title="Location History">
           {person.location_history?.length ? (
@@ -486,24 +507,18 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           {person.social_media_profiles?.length ? (
             <ul className="space-y-3">
               {person.social_media_profiles.map((p: any, idx: number) => {
-                const href = toAbsoluteUrl(p.url);
-                const label = href.replace(/^https?:\/\//, ""); // nicer display
+                const href = toAbsoluteUrl(p.link);
                 return (
                   <li key={idx} className="text-sm">
-                    <span className="font-medium capitalize">
-                      {p.platform || "Profile"}
-                    </span>
                     {href && (
                       <>
-                        {" "}
-                        ·{" "}
                         <a
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline break-all"
+                          className="font-medium capitalize text-blue-600 hover:text-blue-800 underline break-all"
                         >
-                          {label}
+                          {p.platform || "Profile"}
                         </a>
                       </>
                     )}
@@ -542,16 +557,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
             </ul>
           </Section>
         ) : null}
-
-        {/* Summary */}
-        {foundResult && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-md p-4">
-            <h4 className="font-medium mb-2">Overall Summary</h4>
-            <p className="text-gray-800">
-              {person.short_summary || "No summary available."}
-            </p>
-          </div>
-        )}
       </div>
 
       <p className="text-center text-xs mt-2 text-black">

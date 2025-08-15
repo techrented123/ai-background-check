@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import logo from "@/public/logo.png";
+import { formatRange } from "./dateFormat";
 
 /** -------- Types (same shape you shared) -------- */
 type BasePerson = {
@@ -31,7 +32,7 @@ type BasePerson = {
     description?: string;
     link?: string;
   }>;
-  social_media_profiles?: Array<{ platform?: string; url?: string }>;
+  social_media_profiles?: Array<{ platform?: string; link?: string }>;
   location_history?: Array<
     | string
     | {
@@ -61,7 +62,7 @@ type PdfOptions = {
   city?: string;
   region?: string;
   reportId?: string;
-  riskLevel?: "low" | "medium" | "high";
+  riskLevel?: string;
   generatedAt?: string | Date;
   save?: boolean; // default true
 };
@@ -111,35 +112,14 @@ function toAbsoluteUrl(u?: string) {
     ? u
     : `https://${u.replace(/^\/+/, "")}`;
 }
-function prettyUrl(u: string) {
-  try {
-    const { host, pathname } = new URL(u);
-    return (host + pathname).replace(/\/$/, "");
-  } catch {
-    return u.replace(/^https?:\/\//, "");
-  }
-}
-function isToday(d?: string | Date) {
-  if (!d) return false;
-  const x = new Date(d);
-  const now = new Date();
-  return (
-    x.getFullYear() === now.getFullYear() &&
-    x.getMonth() === now.getMonth() &&
-    x.getDate() === now.getDate()
-  );
-}
+
 function formatMonthYear(d?: string | Date) {
   if (!d) return "";
   const x = new Date(d);
   if (isNaN(+x)) return String(d ?? "");
   return `${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
 }
-function formatRange(start?: string | Date, end?: string | Date | null) {
-  const s = formatMonthYear(start);
-  const e = end && !isToday(end) ? formatMonthYear(end) : "Present";
-  return s || e ? `${s} – ${e}` : "";
-}
+
 function titleCase(s?: string) {
   if (!s) return "";
   return s
@@ -388,7 +368,7 @@ export function generatePDF(
       primary: string;
       secondary?: string;
       meta?: string;
-      url?: string;
+      link?: string;
     }>
   ) {
     const secW = pageW - marginX * 2;
@@ -410,7 +390,6 @@ export function generatePDF(
     doc.text(title, marginX + padding, y + headerH - 2);
 
     let yy = y + headerH + padding;
-
     rows.forEach((r, idx) => {
       // Pre-wrap with the same width we’ll render with
       doc.setFont("helvetica", "bold").setFontSize(11);
@@ -458,7 +437,7 @@ export function generatePDF(
         .setFont("helvetica", "bold")
         .setFontSize(11)
         .setTextColor(...COLOR.text);
-      const url = r.url ? toAbsoluteUrl(r.url) : "";
+      const url = r.link ? toAbsoluteUrl(r.link) : "";
       primaryLines.forEach((ln: any) => {
         if (url) {
           doc.setTextColor(0, 0, 255);
@@ -585,7 +564,7 @@ export function generatePDF(
   {
     const rows = (base.social_media_profiles || []).map((s) => ({
       primary: titleCase(s.platform) || "Profile",
-      url: s.url ? toAbsoluteUrl(s.url) : undefined,
+      link: s.link ? toAbsoluteUrl(s.link) : undefined,
     }));
     drawListSection(
       "Online / Social Profiles",

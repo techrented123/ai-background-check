@@ -1,4 +1,3 @@
-import React from "react";
 /* ---------- helpers ---------- */
 export function formatDate(d?: string | Date) {
   if (!d) return "";
@@ -43,9 +42,11 @@ export function formatMonthYear(d?: string | Date) {
 }
 
 // For ranges like Employment/Education
-export function formatRange(start?: string | Date, end?: string | Date) {
+export function formatRange(start?: string | Date, end?: string | Date | null) {
+  if (start === null && end === null) {
+    return "Unknown";
+  }
   const startStr = formatMonthYear(start);
-  console.log({ startStr });
   const endStr = end && !isToday(end) ? formatMonthYear(end) : "Present";
   return `${startStr} – ${endStr}`;
 }

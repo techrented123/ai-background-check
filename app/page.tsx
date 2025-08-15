@@ -76,7 +76,6 @@ export default function BackgroundCheck() {
   const verifyToken = React.useCallback(
     async (token: string | null) => {
       const activeToken = await getToken(token as string);
-      console.log({ activeToken });
       if (!activeToken || activeToken.product !== "ai-check")
         router.push("/404");
       else {
