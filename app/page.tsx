@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
-import { Form } from "./_components/Form";
-import Header from "./_components/Header";
+import { Form } from "./_components/ui/Form";
+import Header from "./_components/ui/Header";
 import { getToken } from "./actions";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -18,7 +18,7 @@ export default function BackgroundCheck() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [results, setResults] = useState<BackgroundCheckResult | null>(null);
-
+  const [prospectInfo, setProspectInfo] = useState<ProspectInfo | null>(null);
   const inputFields: ProspectInfo = {
     firstName: "",
     lastName: "",
@@ -76,6 +76,7 @@ export default function BackgroundCheck() {
   const verifyToken = React.useCallback(
     async (token: string | null) => {
       const activeToken = await getToken(token as string);
+      console.log({ activeToken });
       if (!activeToken || activeToken.product !== "ai-check")
         router.push("/404");
       else {
@@ -87,6 +88,8 @@ export default function BackgroundCheck() {
 
   const handleSubmit = React.useCallback(async (prospectInfo: ProspectInfo) => {
     setIsLoading(true);
+    setApiError(null);
+    setProspectInfo(prospectInfo);
     setRetries((prev) => (prev <= 2 ? prev + 1 : prev));
     try {
       const response = await fetch("/api/background-check", {
@@ -96,12 +99,25 @@ export default function BackgroundCheck() {
         },
         body: JSON.stringify({ ...prospectInfo }),
       });
-      if (!response.ok)
-        throw new Error("A network error occured. Please try again");
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      const raw = await response.text();
+      let data: any = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        // If the server returned HTML or non-JSON, keep raw
+        data = { error: raw };
       }
+
+      if (!response.ok) {
+        // Server-side failure (e.g., 502 when both providers actually crashed)
+        const msg =
+          data?.error ||
+          data?.message ||
+          `A network error occurred (HTTP ${response.status}). Please try again.`;
+        throw new Error(msg);
+      }
+      console.log({ data });
+
       setResults(data);
     } catch (error) {
       console.error("Error performing background check:", error);
@@ -159,6 +175,7 @@ export default function BackgroundCheck() {
               isLoading={isLoading}
               error={apiError}
               retries={retries}
+              prospect={prospectInfo}
             />
           </div>
         </div>

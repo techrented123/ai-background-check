@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { ProspectInfo } from "@/types";
 
-import { UserCheck, AlertCircle } from "./ui/icons";
-import Tooltip from "./ui/Tooltip/Tooltip";
+import { UserCheck, AlertCircle } from "./icons";
+import Tooltip from "./Tooltip/Tooltip";
 
 interface BackgroundCheckFormProps {
   onSubmit: (info: ProspectInfo) => void;
