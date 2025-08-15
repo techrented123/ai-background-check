@@ -76,9 +76,9 @@ Rules
 };
 
 async function fetchViaChatGPT(formData: ProspectInfo) {
-  const apiKey = process.env.OPEN_AI_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_OPEN_AI_API_KEY;
   const client = new OpenAI({ apiKey });
-  console.log({ apiKey });
+  console.log("CAT", { apiKey });
   const userInput = `
 Begin investigation:
 Name: ${formData.firstName} ${formData.other_names || ""} ${formData.lastName}
@@ -265,7 +265,7 @@ DOB: ${formData.dob || "Unknown"}
         data.press_mentions.length
     );
 
-    return { ok: true, data: { ...data, foundPerson  } };
+    return { ok: true, data: { ...data, foundPerson } };
   } catch (err: any) {
     // graceful fallback if web_search isn’t enabled on the account
     if (err?.status === 400 && /web_search/i.test(err?.message || "")) {
@@ -290,7 +290,7 @@ async function fetchViaPDL(body: ProspectInfo) {
     return { ok: false, error: `Missing a form field` };
   }
 
-  const apiKey = process.env.PDL_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_PDL_API_KEY;
   console.log({ apiKey });
   // --- 3. Construct the request payload for the PDL API ---
   // We use the exact field names required by the PDL Identify API.
