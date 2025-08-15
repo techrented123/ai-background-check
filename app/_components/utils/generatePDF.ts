@@ -279,7 +279,7 @@ export function generatePDF(
   const marginY = 12;
   const textColor: RGB = COLOR.text;
   let y = marginY;
-
+  console.log({ base });
   /* ---- Cover page ---- */
   createCoverPage(doc, pageW, textColor, subjectName);
   doc.addPage();
@@ -587,7 +587,7 @@ export function generatePDF(
       };
     });
     drawListSection(
-      "Location History",
+      "Locations",
       rows.length ? rows : [{ primary: "No location history found." }]
     );
   }

@@ -337,11 +337,11 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                       <span className="font-medium capitalize">
                         {label || "Location"}
                       </span>
-                      {(start || end) && (
+                      {/* (start || end) && (
                         <span className="text-gray-600">
                           {formatRange(start, end)}
                         </span>
-                      )}
+                      ) */}
                     </div>
                     {/* optional extra address line if you have it */}
                     {loc.address_line && (
@@ -366,7 +366,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 <li key={idx} className="text-sm">
                   <div className="flex justify-between">
                     <span className="font-medium">{c.title || c.type}</span>
-                    <span className="text-gray-600">{formatDate(c.date)}</span>
+                    <span className="text-gray-600">{formatRange(c.date)}</span>
                   </div>
                   <p className="text-gray-700">
                     {[c.location, c.plaintiff].filter(Boolean).join(" • ")}
@@ -454,16 +454,17 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
             <ul className="space-y-3">
               {person.company_registrations.map((co: any, idx: number) => (
                 <li key={idx} className="text-sm">
-                  <span className="font-medium">{co.name}</span>{" "}
-                  {co.link && (
+                  {co.link ? (
                     <a
                       href={co.link}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-800 underline"
                     >
-                      Registry
+                      <span className="font-medium">{co.name}</span>{" "}
                     </a>
+                  ) : (
+                    <span className="font-medium">{co.name}</span>
                   )}
                 </li>
               ))}
@@ -481,7 +482,9 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 <li key={idx} className="text-sm">
                   <div className="flex justify-between">
                     <span className="font-medium">{pr.topic || "Mention"}</span>
-                    <span className="text-gray-600">{formatDate(pr.date)}</span>
+                    <span className="text-gray-600">
+                      {formatRange(pr.date)}
+                    </span>
                   </div>
                   {pr.description && (
                     <p className="text-gray-700">{pr.description}</p>
@@ -541,7 +544,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 <li key={idx} className="text-sm">
                   <div className="flex justify-between">
                     <span className="font-medium">{c.platform}</span>
-                    <span className="text-gray-600">{formatDate(c.date)}</span>
+                    <span className="text-gray-600">{formatRange(c.date)}</span>
                   </div>
                   {c.content && <p className="text-gray-700">{c.content}</p>}
                   {c.link && (
@@ -554,6 +557,28 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                       View
                     </a>
                   )}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
+
+        {person.others?.length ? (
+          <Section title="Other Findings">
+            <ul className="space-y-3">
+              {person.others.map((c: any, idx: number) => (
+                <li key={idx} className="text-sm">
+                  <div className="flex justify-between">
+                    <a
+                      href={c.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      <span className="font-medium">{c.platform}</span>
+                    </a>
+                  </div>
+                  {c.note && <p className="text-gray-700">{c.note}</p>}
                 </li>
               ))}
             </ul>

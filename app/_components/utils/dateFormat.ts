@@ -43,10 +43,11 @@ export function formatMonthYear(d?: string | Date) {
 
 // For ranges like Employment/Education
 export function formatRange(start?: string | Date, end?: string | Date | null) {
-  if (start === null && end === null) {
-    return "Unknown";
-  }
+  if (start === null && end === null) return "Unknown";
+
   const startStr = formatMonthYear(start);
+  if (!end) return startStr;
+
   const endStr = end && !isToday(end) ? formatMonthYear(end) : "Present";
   return `${startStr} – ${endStr}`;
 }
