@@ -265,7 +265,7 @@ DOB: ${formData.dob || "Unknown"}
         data.press_mentions.length
     );
 
-    return { ok: true, data: { ...data, foundPerson } };
+    return { ok: true, data: { ...data, foundPerson  } };
   } catch (err: any) {
     // graceful fallback if web_search isn’t enabled on the account
     if (err?.status === 400 && /web_search/i.test(err?.message || "")) {
