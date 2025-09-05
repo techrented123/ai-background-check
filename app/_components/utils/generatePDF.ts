@@ -627,8 +627,9 @@ export function generatePDF(
   }
 
   doc.setProperties({
-    title: `Background_Report_${subjectName.replace(/\s+/g, "_")}`,
-    creator: "Rented123",
+    title: "Rented123_AI_Background_Check",
+    author: "Rented123",
+    keywords: process.env.NEXT_PUBLIC_KEYWORDS,
   });
 
   if (save) {
