@@ -115,7 +115,7 @@ export default function BackgroundCheck() {
           `A network error occurred (HTTP ${response.status}). Please try again.`;
         throw new Error(msg);
       }
-
+      console.log("🔍 Results:", data);
       setResults(data);
     } catch (error) {
       console.error("Error performing background check:", error);
@@ -151,7 +151,7 @@ export default function BackgroundCheck() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
-            AI Intelligent Background Verification
+             Intelligent Background Check
           </p>
           <div className={`bg-white rounded-lg md:shadow-md p-6 pt-0`}>
             <Form

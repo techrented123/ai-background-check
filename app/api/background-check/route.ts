@@ -3,10 +3,66 @@ import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { ProspectInfo } from "../../../types";
 
-// ✅ server-side key (don’t use NEXT_PUBLIC here)
+// ✅ server-side key (don't use NEXT_PUBLIC here)
 
 // (Optional) force Node runtime (not Edge)
 export const runtime = "nodejs";
+
+// Company name validation to filter out hallucinations
+function isValidCompanyName(company: string): boolean {
+  // Reject obvious hallucinations
+  if (!company || company.length < 2) return false;
+
+  // Reject placeholder/generic names
+  const invalidPatterns = [
+    /^(xxx|cccc|zzz|[a-z]{1,4})$/i, // Single/double/triple letters
+    /^(company|inc|ltd|llc)$/i, // Generic terms
+    /^(test|sample|example)$/i, // Test data
+    /^(unknown|n\/a|tbd)$/i, // Unknown indicators
+    /^(fraud|fake)$/i, // Suspicious names
+    /^fraud\s+ai$/i, // Fraud AI with space
+  ];
+
+  // Additional specific rejections
+  const specificRejections = ["xxx", "ccc", "zzz", "fraud ai", "fraud ai inc"];
+  if (specificRejections.includes(company.toLowerCase())) {
+    console.log(`🚫 Specific rejection: "${company}"`);
+    return false;
+  }
+
+  const isPatternMatch = invalidPatterns.some((pattern) =>
+    pattern.test(company)
+  );
+  if (isPatternMatch) {
+    console.log(`🚫 Pattern rejection: "${company}"`);
+    return false;
+  }
+
+  console.log(`✅ Accepting company: "${company}"`);
+  return true;
+}
+
+// Validate employment data to filter out hallucinations
+function validateEmploymentData(employmentData: any[]): any[] {
+  if (!Array.isArray(employmentData)) return [];
+
+  return employmentData.filter((job) => {
+    const hasValidCompany = isValidCompanyName(job.company);
+    const hasValidPosition =
+      job.position &&
+      job.position.toLowerCase() !== "xxx" &&
+      job.position.length > 2;
+
+    // Debug logging
+    if (!hasValidCompany) {
+      console.log(
+        `❌ Rejected company: "${job.company}" - Position: "${job.position}"`
+      );
+    }
+
+    return hasValidCompany && hasValidPosition;
+  });
+}
 
 const getSystemInstructions = (formData: ProspectInfo) => {
   return `const instructions = You are a highly-skilled automated public‐profile investigator. When given a tenant’s details, you will:
@@ -254,17 +310,40 @@ DOB: ${formData.dob || "Unknown"}
     });
 
     const output = res.output_text || "{}";
+    console.log("🔍 OpenAI Response:", output);
     const data = JSON.parse(output);
-    const foundPerson = Boolean(
-      data.company_registrations.length ||
-        data.social_media_profiles.length ||
-        data.employment_history.length ||
-        data.public_comments.length ||
-        data.legal_appearances.length ||
-        data.press_mentions.length
+
+    // Validate employment data to remove hallucinations
+    const validatedEmployment = validateEmploymentData(
+      data.employment_history || []
+    );
+    console.log(
+      `✨ Original employment entries: ${data.employment_history?.length || 0}`
+    );
+    console.log(
+      `✅ Validated employment entries: ${validatedEmployment.length}`
     );
 
-    return { ok: true, data: { ...data, foundPerson } };
+    // Filter out filtered employment if validation removed too many
+    const finalData = {
+      ...data,
+      employment_history:
+        validatedEmployment.length > 0
+          ? validatedEmployment
+          : data.employment_history || [],
+    };
+
+    console.log("📊 Parsed OpenAI Data:", JSON.stringify(finalData, null, 2));
+    const foundPerson = Boolean(
+      finalData.company_registrations.length ||
+        finalData.social_media_profiles.length ||
+        finalData.employment_history.length ||
+        finalData.public_comments.length ||
+        finalData.legal_appearances.length ||
+        finalData.press_mentions.length
+    );
+
+    return { ok: true, data: { ...finalData, foundPerson } };
   } catch (err: any) {
     // graceful fallback if web_search isn’t enabled on the account
     if (err?.status === 400 && /web_search/i.test(err?.message || "")) {
@@ -321,8 +400,13 @@ async function fetchViaPDL(body: ProspectInfo) {
     });
 
     const pdlData = await response.json().catch(() => ({}));
+    console.log(
+      "📋 People Data Labs Response:",
+      JSON.stringify(pdlData, null, 2)
+    );
 
     if (!response.ok) {
+      console.log("❌ PDL Error:", pdlData);
       return {
         ok: false,
         http: response.status,
@@ -337,14 +421,46 @@ async function fetchViaPDL(body: ProspectInfo) {
     // --- 5. Handle the response from PDL ---
     // A status of 200 from PDL indicates a successful match was found.
     if (pdlData.status === 200) {
-      // Return the matched profile data directly.
+      let selectedMatch =
+        matches.length > 1
+          ? matches.sort((a: any, b: any) => b.match_score - a.match_score)[0]
+          : matches[0];
 
-      if (matches.length > 1) {
-        const firstMatch = matches.sort((a: any, b: any) => a - b)[0];
+      // Validate PDL employment data if it exists
+      if (selectedMatch?.data?.experience) {
+        const originalExperiences = selectedMatch.data.experience.length;
 
-        return { ok: true, data: firstMatch };
+        // Convert PDL experience format to our format for validation
+        const employmentData = selectedMatch.data.experience.map((exp: any) => ({
+          company: exp.company?.name || "",
+          position: exp.title?.name || "",
+          start_date: exp.start_date || "",
+          end_date: exp.end_date || "",
+        }));
+
+        const validatedEmployment = validateEmploymentData(employmentData);
+        console.log(`🎯 PDL Original experiences: ${originalExperiences}`);
+        console.log(
+          `✅ PDL Validated experiences: ${validatedEmployment.length}`
+        );
+
+        // Convert back to PDL format and update the match
+        if (validatedEmployment.length < originalExperiences) {
+          selectedMatch.data.experience = validatedEmployment.map((job) => ({
+            company: { name: job.company },
+            title: { name: job.position },
+            start_date: job.start_date,
+            end_date: job.end_date,
+          }));
+
+          // If all experiences were invalid, remove them entirely
+          if (validatedEmployment.length === 0) {
+            selectedMatch.data.experience = [];
+          }
+        }
       }
-      return { ok: true, data: matches };
+
+      return { ok: true, data: selectedMatch };
     }
 
     // PDL returns a 404 if no match is found for the given criteria.
@@ -428,6 +544,12 @@ export async function POST(request: NextRequest) {
       gptSettled.status === "fulfilled"
         ? gptSettled.value
         : { ok: false, error: gptSettled.reason?.message || "OpenAI crashed" };
+
+    console.log("🤖 GPT Result:", gpt);
+    console.log("📊 GPT Settled Status:", gptSettled.status);
+    if (gptSettled.status === "rejected") {
+      console.log("❌ GPT Rejection Reason:", gptSettled.reason);
+    }
 
     /*  const pdl3 = {
       ok: true,
@@ -686,25 +808,40 @@ export async function POST(request: NextRequest) {
             data: null,
           };
 
+    console.log("📋 PDL Result:", pdl);
+    console.log("📊 PDL Settled Status:", pdlSettled.status);
+    if (pdlSettled.status === "rejected") {
+      console.log("❌ PDL Rejection Reason:", pdlSettled.reason);
+    }
+
     const ok = Boolean(gpt?.ok || pdl?.ok);
+
+    console.log("🎯 Final Combined Result - OK:", ok);
+    console.log("🔄 GPT OK:", gpt?.ok);
+    console.log("🔄 PDL OK:", pdl?.ok);
 
     // Only treat as server error if BOTH providers actually crashed/rejected
     const bothCrashed =
       gptSettled.status === "rejected" && pdlSettled.status === "rejected";
 
     const status = bothCrashed ? 502 : 200;
-    return NextResponse.json(
-      {
-        ok,
-        gpt,
-        pdl: {
-          ok: pdl?.ok,
-          data: pdl?.data?.data,
-          //match_score: pdl?.match_score,
-        },
+    const finalResponse = {
+      ok,
+      gpt,
+      pdl: {
+        ok: pdl?.ok,
+        data: pdl?.data?.data,
+        //match_score: pdl?.match_score,
       },
-      { status }
+    };
+
+    console.log(
+      "📤 Final API Response:",
+      JSON.stringify(finalResponse, null, 2)
     );
+    console.log("📄 Response Status:", status);
+
+    return NextResponse.json(finalResponse, { status });
   } catch (e) {
     console.log(e);
     return NextResponse.json(

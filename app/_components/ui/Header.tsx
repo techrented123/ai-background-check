@@ -20,7 +20,7 @@ const Header: React.FC = () => {
                 Rented123
               </h1>
               <p className="text-sm text-[#293074] hidden md:block">
-                AI Intelligent Background Verification
+                Intelligent Background Check
               </p>
             </div>
           </div>

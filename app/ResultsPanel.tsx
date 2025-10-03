@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { BackgroundCheckResult, ProspectInfo } from "@/types";
-import { Download, FileText, InfoIcon } from "./_components/ui/icons";
+import { Download, FileText, InfoIcon, Mail } from "./_components/ui/icons";
 import { generatePDF } from "./_components/utils/generatePDF";
 import Tooltip from "./_components/ui/Tooltip/Tooltip";
 import { formatDate, formatRange } from "./_components/utils/dateFormat";
@@ -15,6 +15,7 @@ import {
   buildPDLEnhancedSummary,
   mergeSummaries,
 } from "./_components/utils/pdlSummary";
+import { EmailModal } from "./_components/ui/EmailModal";
 
 type ResultsPanelProps = {
   results: BackgroundCheckResult | null;
@@ -41,6 +42,9 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       window.scrollTo(0, document.body.scrollHeight);
     }
   }, [error, results]);
+
+  // Email modal state
+  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
 
   // Stable report metadata (no flicker across re-renders)
   const reportIdRef = React.useRef(
@@ -159,17 +163,101 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     };
   }, [results, prospect]);
 
-  const handleDownloadPDF = React.useCallback(() => {
+  const handleDownloadPDF = React.useCallback(async () => {
     if (person && prospect) {
-      generatePDF(person, {
-        subjectName: `${prospect.firstName} ${prospect.lastName}`,
-        city: prospect.city,
-        region: prospect.state,
-        reportId: reportIdRef.current,
-        riskLevel: riskLevel ?? "medium",
-        generatedAt: results?.timestamp ?? new Date().toISOString(),
-        save: true, // default}
-      });
+      try {
+        // Generate PDF blob first
+        const pdfBlob = generatePDF(person, {
+          subjectName: `${prospect.firstName} ${prospect.lastName}`,
+          city: prospect.city,
+          region: prospect.state,
+          reportId: reportIdRef.current,
+          riskLevel: riskLevel ?? "medium",
+          generatedAt: results?.timestamp ?? new Date().toISOString(),
+          save: false, // Return blob instead of saving
+        });
+
+        // Convert blob to base64 for S3 upload
+        if (!pdfBlob) {
+          throw new Error("Failed to generate PDF");
+        }
+
+        // Use a more efficient method to avoid stack overflow with large PDFs
+        let pdfBase64: string;
+        try {
+          // Method 1: Use FileReader (most efficient for large files)
+          pdfBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              // Remove data:application/pdf;base64, prefix
+              const base64 = result.split(",")[1];
+              resolve(base64);
+            };
+            reader.onerror = () => reject(new Error("Failed to read PDF"));
+            reader.readAsDataURL(pdfBlob);
+          });
+        } catch (error) {
+          // Fallback: Use arrayBuffer with chunking for large files
+          const pdfBuffer = await pdfBlob.arrayBuffer();
+          const bytes = new Uint8Array(pdfBuffer);
+
+          // Process in chunks to avoid stack overflow
+          const chunkSize = 8192; // 8KB chunks
+          let binary = "";
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.slice(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          pdfBase64 = btoa(binary);
+        }
+
+        const fileName = `background-report-${
+          reportIdRef.current
+        }-${Date.now()}.pdf`;
+
+        // Upload PDF to S3
+        const storeResponse = await fetch("/api/store-pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            PDFfile: pdfBase64,
+            fileName: fileName,
+          }),
+        });
+
+        if (!storeResponse.ok) {
+          throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
+        }
+
+        const s3Result = await storeResponse.json();
+        const s3PdfUrl = s3Result.location;
+        console.log("PDF uploaded to S3:", s3PdfUrl);
+
+        // Create temporary link and trigger download
+        const link = document.createElement("a");
+        link.href = s3PdfUrl;
+        link.download = `background-report-${prospect.firstName}-${prospect.lastName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("Failed to download PDF:", error);
+        alert(`Failed to download PDF: ${(error as Error).message}`);
+
+        // Fallback to direct download if S3 fails
+        generatePDF(person, {
+          subjectName: `${prospect.firstName} ${prospect.lastName}`,
+          city: prospect.city,
+          region: prospect.state,
+          reportId: reportIdRef.current,
+          riskLevel: riskLevel ?? "medium",
+          generatedAt: results?.timestamp ?? new Date().toISOString(),
+          save: true, // fallback to direct download
+        });
+      }
     }
   }, [results, person, prospect, riskLevel]);
 
@@ -228,20 +316,33 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-4 md:justify-between items-center mb-6">
         <div className="hidden md:flex">
-          <h2 className="md:text-xl font-semibold text-gray-800">
+          <h2 className="md:text-xl  font-semibold text-gray-800">
             Background Check Results
           </h2>
         </div>
 
         {foundResult && (
-          <button
-            onClick={handleDownloadPDF}
-            disabled={!results}
-            className="text-md md:text-lg w-fit cursor-pointer flex items-center text-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={!results}
+              className="cursor-pointer text-xs md:text-sm flex items-center px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              <span className="hidden sm:inline">Download PDF</span>
+              <span className="sm:hidden">Download PDF</span>
+            </button>
+
+            <button
+              onClick={() => setIsEmailModalOpen(true)}
+              disabled={!results}
+              className="text-sm cursor-pointer md:text-sm flex items-center px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              <Mail className="h-3 w-3 mr-1" />
+              <span className="hidden sm:inline">Send via Email</span>
+              <span className="sm:hidden">Send via Email</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -249,7 +350,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         <div className="text-sm text-center mb-4 text-red-500">
           We couldn&apos;t find enough information about {prospect?.firstName}{" "}
           {prospect?.lastName}.
-          {retries < 2 ? (
+          {retries < 100 ? (
             <> Please try again.</>
           ) : (
             <p>
@@ -589,6 +690,18 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       <p className="text-center text-xs mt-2 text-black">
         AI can make mistakes. Some results may be incorrect.
       </p>
+
+      {/* Email Modal */}
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        subjectName={`${prospect?.firstName ?? ""} ${
+          prospect?.lastName ?? ""
+        }`.trim()}
+        reportId={reportIdRef.current}
+        personData={person}
+        prospect={prospect}
+      />
     </div>
   );
 };

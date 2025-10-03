@@ -323,7 +323,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
         </div>
       )}
       <div className="mt-6">
-        {retries >= 2 ? (
+        {retries >= 100 ? (
           <Tooltip text="You have a max of 2 attempts">
             <button
               type="submit"
