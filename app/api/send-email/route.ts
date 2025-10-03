@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-const AWS_ACCESS_KEY_ID = process.env.ACCESS_KEY_ID!;
-const AWS_SECRET_ACCESS_KEY = process.env.ACCESS_KEY_SECRET!;
-const AWS_REGION = process.env.REGION!;
+const AWS_ACCESS_KEY_ID = process.env.NEXT_PUBLIC_ACCESS_KEY_ID!;
+const AWS_SECRET_ACCESS_KEY = process.env.NEXT_PUBLIC_ACCESS_KEY_SECRET!;
+const AWS_REGION = process.env.NEXT_PUBLIC_REGION!;
 
 export async function POST(req: Request) {
   const { userDetails, recipientEmail, pdfUrl } = await req.json();
