@@ -23,7 +23,16 @@ export async function POST(req: Request) {
     Body: pdfBuffer,
     ContentType: "application/pdf",
   };
-
+  console.log(
+    "AWS_ACCESS_KEY_ID:",
+    AWS_ACCESS_KEY_ID,
+    "AWS_SECRET_ACCESS_KEY:",
+    AWS_SECRET_ACCESS_KEY,
+    "AWS_REGION:",
+    AWS_REGION,
+    "Params:",
+    params
+  );
   try {
     const data = await s3.send(new PutObjectCommand(params));
     console.log("File uploaded successfully:", data);
