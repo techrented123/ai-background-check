@@ -363,7 +363,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         <div className="text-sm text-center mb-4 text-red-500">
           We couldn&apos;t find enough information about {prospect?.firstName}{" "}
           {prospect?.lastName}.
-          {retries < 100 ? (
+          {retries < 5 ? (
             <> Please try again.</>
           ) : (
             <p>
