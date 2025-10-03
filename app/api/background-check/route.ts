@@ -421,7 +421,7 @@ async function fetchViaPDL(body: ProspectInfo) {
     // --- 5. Handle the response from PDL ---
     // A status of 200 from PDL indicates a successful match was found.
     if (pdlData.status === 200) {
-      let selectedMatch =
+      const selectedMatch =
         matches.length > 1
           ? matches.sort((a: any, b: any) => b.match_score - a.match_score)[0]
           : matches[0];

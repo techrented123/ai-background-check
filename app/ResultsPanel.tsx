@@ -163,6 +163,30 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     };
   }, [results, prospect]);
 
+  const uploadToS3 = React.useCallback(
+    async (pdfBase64: string, fileName: string) => {
+      const storeResponse = await fetch("/api/store-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          PDFfile: pdfBase64,
+          fileName: fileName,
+        }),
+      });
+
+      if (!storeResponse.ok) {
+        throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
+      }
+
+      const s3Result = await storeResponse.json();
+      console.log("PDF uploaded to S3:", s3Result.location);
+      return s3Result;
+    },
+    []
+  );
+
   const handleDownloadPDF = React.useCallback(async () => {
     if (person && prospect) {
       try {
@@ -201,7 +225,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           // Fallback: Use arrayBuffer with chunking for large files
           const pdfBuffer = await pdfBlob.arrayBuffer();
           const bytes = new Uint8Array(pdfBuffer);
-
+          console.log(error);
           // Process in chunks to avoid stack overflow
           const chunkSize = 8192; // 8KB chunks
           let binary = "";
@@ -216,33 +240,22 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           reportIdRef.current
         }-${Date.now()}.pdf`;
 
-        // Upload PDF to S3
-        const storeResponse = await fetch("/api/store-pdf", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            PDFfile: pdfBase64,
-            fileName: fileName,
-          }),
-        });
-
-        if (!storeResponse.ok) {
-          throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
-        }
-
-        const s3Result = await storeResponse.json();
-        const s3PdfUrl = s3Result.location;
-        console.log("PDF uploaded to S3:", s3PdfUrl);
-
-        // Create temporary link and trigger download
+        // Download PDF immediately to user's download folder
         const link = document.createElement("a");
-        link.href = s3PdfUrl;
+        link.href = URL.createObjectURL(pdfBlob);
         link.download = `background-report-${prospect.firstName}-${prospect.lastName}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // Clean up the blob URL
+        URL.revokeObjectURL(link.href);
+
+        // Upload PDF to S3 in the background (async, don't wait)
+        uploadToS3(pdfBase64, fileName).catch((error) => {
+          console.error("Background S3 upload failed:", error);
+          // S3 upload failure doesn't affect user experience since download already happened
+        });
       } catch (error) {
         console.error("Failed to download PDF:", error);
         alert(`Failed to download PDF: ${(error as Error).message}`);
