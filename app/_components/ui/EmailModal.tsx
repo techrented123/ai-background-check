@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { X } from "./icons";
 import { generatePDF } from "../utils/generatePDF";
+import { ProspectInfo } from "../../../types";
 
 interface EmailModalProps {
   isOpen: boolean;
   onClose: () => void;
   subjectName: string;
   reportId: string;
-  personData?: any; // Background check results
-  prospect?: any; // Prospect info from form
+  personData?: any; // Background check results (matching the constructed data)
+  prospect?: ProspectInfo | null; // Prospect info from form
 }
 
 export const EmailModal: React.FC<EmailModalProps> = ({
@@ -37,6 +38,10 @@ export const EmailModal: React.FC<EmailModalProps> = ({
 
     try {
       // Generate PDF blob first
+      if (!personData) {
+        throw new Error("No person data available for PDF generation");
+      }
+
       const pdfBlob = generatePDF(personData, {
         subjectName,
         city: prospect?.city,
@@ -67,7 +72,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
           reader.onerror = () => reject(new Error("Failed to read PDF"));
           reader.readAsDataURL(pdfBlob);
         });
-      } catch (error) {
+      } catch {
         // Fallback: Use arrayBuffer with chunking for large files
         const pdfBuffer = await pdfBlob.arrayBuffer();
         const bytes = new Uint8Array(pdfBuffer);
@@ -151,13 +156,6 @@ export const EmailModal: React.FC<EmailModalProps> = ({
     } finally {
       setIsSending(false);
     }
-  };
-
-  const resetForm = () => {
-    setRecipientEmail("");
-    setIsLandlordMode(false);
-    setLandlordEmail("");
-    setMessage({ text: "", type: null });
   };
 
   if (!isOpen) return null;

@@ -272,7 +272,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         });
       }
     }
-  }, [results, person, prospect, riskLevel]);
+  }, [results, person, prospect, riskLevel, uploadToS3]);
 
   /* Early returns AFTER all hooks */
   if (isLoading) {
