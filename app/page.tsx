@@ -4,7 +4,7 @@ import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
 import { Form } from "./_components/ui/Form";
 import Header from "./_components/ui/Header";
-import { getToken } from "./actions";
+import { getToken, updateToken } from "./actions";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
@@ -89,7 +89,7 @@ export default function BackgroundCheck() {
     setIsLoading(true);
     setApiError(null);
     setProspectInfo(prospectInfo);
-    setRetries((prev) => (prev <= 2 ? prev + 1 : prev));
+    setRetries((prev) => (prev <= 3 ? prev + 1 : prev));
     try {
       const response = await fetch("/api/background-check", {
         method: "post",
@@ -117,6 +117,10 @@ export default function BackgroundCheck() {
       }
       console.log("🔍 Results:", data);
       setResults(data);
+      // Call updateToken on successful background check
+      if (token) {
+        await updateToken(token);
+      }
     } catch (error) {
       console.error("Error performing background check:", error);
       setApiError(
@@ -151,7 +155,7 @@ export default function BackgroundCheck() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
-             Intelligent Background Check
+            Intelligent Background Check
           </p>
           <div className={`bg-white rounded-lg md:shadow-md p-6 pt-0`}>
             <Form
