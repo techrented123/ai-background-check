@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import jsPDF from "jspdf";
 import logo from "@/public/logo.png";
 import { formatRange } from "./dateFormat";

@@ -27,7 +27,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
   onRetryUpload,
 }) => {
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [isLandlordMode, setIsLandlordMode] = useState(false);
+  const [isLandlordMode] = useState(false);
   const [landlordEmail, setLandlordEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<{
@@ -137,8 +137,6 @@ export const EmailModal: React.FC<EmailModalProps> = ({
               placeholder="Enter email address"
             />
           </div>
-
-          
 
           {/* Landlord Email Field */}
           {isLandlordMode && (

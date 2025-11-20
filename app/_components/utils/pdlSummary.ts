@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // --- summary-merge helpers ---
 // --- PDL-enriched summary builder (employment + education + locations)
 

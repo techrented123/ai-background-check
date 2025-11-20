@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { ProspectInfo } from "../../../types";
