@@ -264,6 +264,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           body: JSON.stringify({
             PDFfile: pdfBase64,
             fileName,
+            email: autoSendEmailTo ?? prospect.email,
           }),
         });
 
@@ -299,7 +300,15 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     return () => {
       canceled = true;
     };
-  }, [person, prospect, foundResult, results, riskLevel, uploadAttempt]);
+  }, [
+    person,
+    prospect,
+    foundResult,
+    results,
+    riskLevel,
+    uploadAttempt,
+    autoSendEmailTo,
+  ]);
 
   React.useEffect(() => {
     setAutoEmailStatus("idle");
@@ -360,7 +369,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         if (!canceled) {
           lastAutoEmailKeyRef.current = emailKey;
           setAutoEmailStatus("sent");
-          onAutoEmailSent?.(autoSendEmailTo);
         }
       } catch (error) {
         if (!canceled) {
@@ -370,7 +378,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
               ? error.message
               : "Unable to send the report automatically";
           setAutoEmailError(message);
-          onAutoEmailError?.(autoSendEmailTo, message);
         }
       }
     };
@@ -389,6 +396,21 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     pdfState.s3Url,
     pdfState.fileName,
     onAutoEmailSent,
+  ]);
+
+  React.useEffect(() => {
+    if (!autoSendEmailTo) return;
+    if (autoEmailStatus === "sent") {
+      onAutoEmailSent?.(autoSendEmailTo);
+    } else if (autoEmailStatus === "error" && autoEmailError) {
+      onAutoEmailError?.(autoSendEmailTo, autoEmailError);
+    }
+  }, [
+    autoEmailStatus,
+    autoSendEmailTo,
+    autoEmailError,
+    onAutoEmailSent,
+    onAutoEmailError,
   ]);
 
   const isPdfProcessing =

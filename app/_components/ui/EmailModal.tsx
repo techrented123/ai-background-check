@@ -112,7 +112,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="cursor-pointer text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -205,7 +205,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
               </p>
             )}
             {!isPdfUploading && !uploadError && pdfUrl && (
-              <p>Report is stored in S3 and ready to email.</p>
+              <p>Report is ready to send.</p>
             )}
           </div>
 
