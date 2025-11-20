@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { X } from "./icons";
-import { generatePDF } from "../utils/generatePDF";
 import { ProspectInfo } from "../../../types";
 
 interface EmailModalProps {
@@ -8,8 +7,12 @@ interface EmailModalProps {
   onClose: () => void;
   subjectName: string;
   reportId: string;
-  personData?: any; // Background check results (matching the constructed data)
-  prospect?: ProspectInfo | null; // Prospect info from form
+  personData?: any;
+  prospect?: ProspectInfo | null;
+  pdfUrl?: string | null;
+  isPdfUploading?: boolean;
+  uploadError?: string | null;
+  onRetryUpload?: () => void;
 }
 
 export const EmailModal: React.FC<EmailModalProps> = ({
@@ -17,8 +20,11 @@ export const EmailModal: React.FC<EmailModalProps> = ({
   onClose,
   subjectName,
   reportId,
-  personData,
   prospect,
+  pdfUrl,
+  isPdfUploading = false,
+  uploadError,
+  onRetryUpload,
 }) => {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [isLandlordMode, setIsLandlordMode] = useState(false);
@@ -37,77 +43,13 @@ export const EmailModal: React.FC<EmailModalProps> = ({
     setIsSending(true);
 
     try {
-      // Generate PDF blob first
-      if (!personData) {
-        throw new Error("No person data available for PDF generation");
+      if (!pdfUrl) {
+        throw new Error(
+          uploadError
+            ? `Unable to send report: ${uploadError}`
+            : "Report is still being prepared. Please try again shortly."
+        );
       }
-
-      const pdfBlob = generatePDF(personData, {
-        subjectName,
-        city: prospect?.city,
-        region: prospect?.state,
-        reportId,
-        riskLevel: "medium", // Default for now
-        generatedAt: new Date().toISOString(),
-        save: false, // Return blob instead of saving
-      });
-
-      // Convert blob to base64 for S3 upload
-      if (!pdfBlob) {
-        throw new Error("Failed to generate PDF");
-      }
-
-      // Use a more efficient method to avoid stack overflow with large PDFs
-      let pdfBase64: string;
-      try {
-        // Method 1: Use FileReader (most efficient for large files)
-        pdfBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            // Remove data:application/pdf;base64, prefix
-            const base64 = result.split(",")[1];
-            resolve(base64);
-          };
-          reader.onerror = () => reject(new Error("Failed to read PDF"));
-          reader.readAsDataURL(pdfBlob);
-        });
-      } catch {
-        // Fallback: Use arrayBuffer with chunking for large files
-        const pdfBuffer = await pdfBlob.arrayBuffer();
-        const bytes = new Uint8Array(pdfBuffer);
-
-        // Process in chunks to avoid stack overflow
-        const chunkSize = 8192; // 8KB chunks
-        let binary = "";
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.slice(i, i + chunkSize);
-          binary += String.fromCharCode(...chunk);
-        }
-        pdfBase64 = btoa(binary);
-      }
-
-      const fileName = `background-report-${reportId}-${Date.now()}.pdf`;
-
-      // Upload PDF to S3 first
-      const storeResponse = await fetch("/api/store-pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          PDFfile: pdfBase64,
-          fileName: fileName,
-        }),
-      });
-
-      if (!storeResponse.ok) {
-        throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
-      }
-
-      const s3Result = await storeResponse.json();
-      const s3PdfUrl = s3Result.location;
-      console.log("PDF uploaded to S3:", s3PdfUrl);
 
       // Prepare recipient emails
       const recipients = [recipientEmail];
@@ -131,7 +73,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
             email: prospect?.email || "",
           },
           recipientEmail: recipients,
-          pdfUrl: s3PdfUrl,
+          pdfUrl,
         }),
       });
 
@@ -251,6 +193,37 @@ export const EmailModal: React.FC<EmailModalProps> = ({
             </p>
           </div>
 
+          <div
+            className={`rounded-md p-3 text-sm ${
+              uploadError
+                ? "bg-red-50 text-red-800 border border-red-200"
+                : isPdfUploading
+                ? "bg-blue-50 text-blue-800 border border-blue-200"
+                : "bg-green-50 text-green-800 border border-green-200"
+            }`}
+          >
+            {isPdfUploading && (
+              <p>Preparing and uploading the PDF to S3. Please wait…</p>
+            )}
+            {!isPdfUploading && uploadError && (
+              <p className="flex flex-wrap items-center gap-2">
+                Failed to upload report.
+                {onRetryUpload && (
+                  <button
+                    type="button"
+                    onClick={onRetryUpload}
+                    className="underline"
+                  >
+                    Retry upload
+                  </button>
+                )}
+              </p>
+            )}
+            {!isPdfUploading && !uploadError && pdfUrl && (
+              <p>Report is stored in S3 and ready to email.</p>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <button
@@ -266,7 +239,10 @@ export const EmailModal: React.FC<EmailModalProps> = ({
               disabled={
                 isSending ||
                 !recipientEmail ||
-                (isLandlordMode && !landlordEmail)
+                (isLandlordMode && !landlordEmail) ||
+                isPdfUploading ||
+                !pdfUrl ||
+                Boolean(uploadError)
               }
               className="cursor-pointer px-5 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

@@ -24,13 +24,14 @@ export async function GET(req: NextRequest) {
   // 3) Fetch
   const response = await fetch(url, { headers });
   const text = await response.text();
-
+console.log("🔑 Token response:", response);
   // 4) Parse or error
   if (!response.ok) {
     return NextResponse.json({ message: text }, { status: response.status });
   }
   try {
     const data = JSON.parse(text);
+    console.log("🔑 Token data:", data);
     return NextResponse.json(data);
   } catch (e) {
     console.error("❌  JSON parse error:", e);

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
 import { Form } from "./_components/ui/Form";
@@ -34,6 +34,8 @@ export default function BackgroundCheck() {
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProspectInfo, string>>
   >({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toggleErrors = (name: string) => {
     setErrors((prev) => ({
       ...prev,
@@ -73,7 +75,30 @@ export default function BackgroundCheck() {
     return isValid;
   };
 
-  const verifyToken = React.useCallback(
+  const showToast = useCallback((message: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToastMessage(message);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleAutoEmailSent = useCallback(() => {
+    showToast("Email sent");
+  }, [showToast]);
+
+  const verifyToken = useCallback(
     async (token: string | null) => {
       const activeToken = await getToken(token as string);
       if (!activeToken || activeToken.product !== "ai-check")
@@ -85,7 +110,7 @@ export default function BackgroundCheck() {
     [router]
   );
 
-  const handleSubmit = React.useCallback(async (prospectInfo: ProspectInfo) => {
+  const handleSubmit = useCallback(async (prospectInfo: ProspectInfo) => {
     setIsLoading(true);
     setApiError(null);
     setProspectInfo(prospectInfo);
@@ -129,9 +154,9 @@ export default function BackgroundCheck() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!token) {
       router.push("/404");
     } else {
@@ -141,12 +166,19 @@ export default function BackgroundCheck() {
     if (retries) setRetries(JSON.parse(retries));
   }, [token, verifyToken, router]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
 
   return (
     <div>
+      {toastMessage && (
+        <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+          <div className="bg-green-600 text-white px-4 py-2 rounded-md shadow-lg">
+            {toastMessage}
+          </div>
+        </div>
+      )}
       <Header />
       <main
         className={`md:container mx-auto md:px-4 px-1 py-3 md:py-8 ${
@@ -178,6 +210,8 @@ export default function BackgroundCheck() {
               error={apiError}
               retries={retries}
               prospect={prospectInfo}
+              autoSendEmailTo={prospectInfo?.email || null}
+              onAutoEmailSent={handleAutoEmailSent}
             />
           </div>
         </div>

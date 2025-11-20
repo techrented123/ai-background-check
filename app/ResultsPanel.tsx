@@ -17,12 +17,49 @@ import {
 } from "./_components/utils/pdlSummary";
 import { EmailModal } from "./_components/ui/EmailModal";
 
+type PdfUploadState = {
+  status: "idle" | "generating" | "uploading" | "uploaded" | "error";
+  blob?: Blob;
+  fileName?: string;
+  s3Url?: string;
+  error?: string;
+};
+
+const initialPdfState: PdfUploadState = { status: "idle" };
+
+async function blobToBase64(pdfBlob: Blob): Promise<string> {
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Failed to read PDF blob"));
+      reader.readAsDataURL(pdfBlob);
+    });
+  } catch {
+    const pdfBuffer = await pdfBlob.arrayBuffer();
+    const bytes = new Uint8Array(pdfBuffer);
+    const chunkSize = 8192;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
+  }
+}
+
 type ResultsPanelProps = {
   results: BackgroundCheckResult | null;
   isLoading: boolean;
   error: string | null;
   retries: number;
   prospect: ProspectInfo | null;
+  autoSendEmailTo?: string | null;
+  onAutoEmailSent?: () => void;
 };
 
 /* ---------- component ---------- */
@@ -32,6 +69,8 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   error,
   retries,
   prospect,
+  autoSendEmailTo,
+  onAutoEmailSent,
 }) => {
   /* Hooks must always run in the same order — put them BEFORE any early return */
 
@@ -51,6 +90,21 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     "BCR-" + Math.random().toString(36).slice(2, 8).toUpperCase()
   );
   const generatedOnRef = React.useRef(new Date());
+  const [pdfState, setPdfState] = React.useState<PdfUploadState>(initialPdfState);
+  const [uploadAttempt, setUploadAttempt] = React.useState(0);
+  const handleRetryUpload = React.useCallback(() => {
+    setUploadAttempt((prev) => prev + 1);
+  }, []);
+  const [autoEmailStatus, setAutoEmailStatus] = React.useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+  const [autoEmailError, setAutoEmailError] = React.useState<string | null>(null);
+  const lastAutoEmailKeyRef = React.useRef<string | null>(null);
+  const handleRetryAutoEmail = React.useCallback(() => {
+    setAutoEmailStatus("idle");
+    setAutoEmailError(null);
+    lastAutoEmailKeyRef.current = null;
+  }, []);
 
   // Merge GPT + PDL into one presentation model
   const { person, foundResult, riskLevel } = React.useMemo(() => {
@@ -163,34 +217,21 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     };
   }, [results, prospect]);
 
-  const uploadToS3 = React.useCallback(
-    async (pdfBase64: string, fileName: string) => {
-      const storeResponse = await fetch("/api/store-pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          PDFfile: pdfBase64,
-          fileName: fileName,
-        }),
-      });
+  React.useEffect(() => {
+    if (!person || !prospect || !foundResult || !results) {
+      setPdfState((prev) => (prev.status === "idle" ? prev : initialPdfState));
+      setAutoEmailStatus("idle");
+      setAutoEmailError(null);
+      lastAutoEmailKeyRef.current = null;
+      return;
+    }
 
-      if (!storeResponse.ok) {
-        throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
-      }
+    let canceled = false;
 
-      const s3Result = await storeResponse.json();
-      console.log("PDF uploaded to S3:", s3Result.location);
-      return s3Result;
-    },
-    []
-  );
+    const prepareAndUploadPdf = async () => {
+      setPdfState({ status: "generating" });
 
-  const handleDownloadPDF = React.useCallback(async () => {
-    if (person && prospect) {
       try {
-        // Generate PDF blob first
         const pdfBlob = generatePDF(person, {
           subjectName: `${prospect.firstName} ${prospect.lastName}`,
           city: prospect.city,
@@ -198,81 +239,191 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           reportId: reportIdRef.current,
           riskLevel: riskLevel ?? "medium",
           generatedAt: results?.timestamp ?? new Date().toISOString(),
-          save: false, // Return blob instead of saving
-        });
+          save: false,
+        }) as Blob | undefined;
 
-        // Convert blob to base64 for S3 upload
         if (!pdfBlob) {
           throw new Error("Failed to generate PDF");
         }
 
-        // Use a more efficient method to avoid stack overflow with large PDFs
-        let pdfBase64: string;
-        try {
-          // Method 1: Use FileReader (most efficient for large files)
-          pdfBase64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const result = reader.result as string;
-              // Remove data:application/pdf;base64, prefix
-              const base64 = result.split(",")[1];
-              resolve(base64);
-            };
-            reader.onerror = () => reject(new Error("Failed to read PDF"));
-            reader.readAsDataURL(pdfBlob);
-          });
-        } catch (error) {
-          // Fallback: Use arrayBuffer with chunking for large files
-          const pdfBuffer = await pdfBlob.arrayBuffer();
-          const bytes = new Uint8Array(pdfBuffer);
-          console.log(error);
-          // Process in chunks to avoid stack overflow
-          const chunkSize = 8192; // 8KB chunks
-          let binary = "";
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.slice(i, i + chunkSize);
-            binary += String.fromCharCode(...chunk);
-          }
-          pdfBase64 = btoa(binary);
+        if (canceled) return;
+
+        const fileName = `background-report-${reportIdRef.current}-${Date.now()}.pdf`;
+        setPdfState({ status: "uploading", blob: pdfBlob, fileName });
+
+        const pdfBase64 = await blobToBase64(pdfBlob);
+        if (canceled) return;
+
+        const storeResponse = await fetch("/api/store-pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            PDFfile: pdfBase64,
+            fileName,
+          }),
+        });
+
+        if (!storeResponse.ok) {
+          throw new Error(`S3 upload failed: ${storeResponse.statusText}`);
         }
 
-        const fileName = `background-report-${
-          reportIdRef.current
-        }-${Date.now()}.pdf`;
+        const s3Result = await storeResponse.json();
+        if (canceled) return;
 
-        // Download PDF immediately to user's download folder
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(pdfBlob);
-        link.download = `background-report-${prospect.firstName}-${prospect.lastName}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up the blob URL
-        URL.revokeObjectURL(link.href);
-
-        // Upload PDF to S3 in the background (async, don't wait)
-        uploadToS3(pdfBase64, fileName).catch((error) => {
-          console.error("Background S3 upload failed:", error);
-          // S3 upload failure doesn't affect user experience since download already happened
+        setPdfState({
+          status: "uploaded",
+          blob: pdfBlob,
+          fileName,
+          s3Url: s3Result.location,
         });
       } catch (error) {
-        console.error("Failed to download PDF:", error);
-        alert(`Failed to download PDF: ${(error as Error).message}`);
-
-        // Fallback to direct download if S3 fails
-        generatePDF(person, {
-          subjectName: `${prospect.firstName} ${prospect.lastName}`,
-          city: prospect.city,
-          region: prospect.state,
-          reportId: reportIdRef.current,
-          riskLevel: riskLevel ?? "medium",
-          generatedAt: results?.timestamp ?? new Date().toISOString(),
-          save: true, // fallback to direct download
-        });
+        if (!canceled) {
+          setPdfState((prev) => ({
+            ...prev,
+            status: "error",
+            error:
+              error instanceof Error
+                ? error.message
+                : "An unexpected error occurred during PDF upload",
+          }));
+        }
       }
+    };
+
+    prepareAndUploadPdf();
+
+    return () => {
+      canceled = true;
+    };
+  }, [
+    person,
+    prospect,
+    foundResult,
+    results,
+    riskLevel,
+    uploadAttempt,
+  ]);
+
+  React.useEffect(() => {
+    setAutoEmailStatus("idle");
+    setAutoEmailError(null);
+    lastAutoEmailKeyRef.current = null;
+  }, [results, autoSendEmailTo]);
+
+  React.useEffect(() => {
+    if (
+      autoEmailStatus !== "idle" ||
+      !autoSendEmailTo ||
+      !prospect ||
+      !results ||
+      pdfState.status !== "uploaded" ||
+      !pdfState.s3Url
+    ) {
+      return;
     }
-  }, [results, person, prospect, riskLevel, uploadToS3]);
+
+    const emailKey = `${results.timestamp ?? ""}-${autoSendEmailTo}-${
+      pdfState.fileName ?? ""
+    }`;
+    if (lastAutoEmailKeyRef.current === emailKey) {
+      return;
+    }
+
+    let canceled = false;
+
+    const sendAutoEmail = async () => {
+      setAutoEmailStatus("sending");
+      setAutoEmailError(null);
+      try {
+        const response = await fetch("/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userDetails: {
+              first_name: prospect?.firstName?.split(" ")[0] || "",
+              last_name:
+                prospect?.lastName ||
+                prospect?.firstName?.split(" ").slice(1).join(" ") ||
+                "",
+              email: prospect?.email || autoSendEmailTo,
+            },
+            recipientEmail: autoSendEmailTo,
+            pdfUrl: pdfState.s3Url,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Email sending failed: ${response.statusText}`);
+        }
+
+        await response.json();
+
+        if (!canceled) {
+          lastAutoEmailKeyRef.current = emailKey;
+          setAutoEmailStatus("sent");
+          onAutoEmailSent?.();
+        }
+      } catch (error) {
+        if (!canceled) {
+          setAutoEmailStatus("error");
+          setAutoEmailError(
+            error instanceof Error
+              ? error.message
+              : "Unable to send the report automatically"
+          );
+        }
+      }
+    };
+
+    sendAutoEmail();
+
+    return () => {
+      canceled = true;
+    };
+  }, [
+    autoEmailStatus,
+    autoSendEmailTo,
+    prospect,
+    results,
+    pdfState.status,
+    pdfState.s3Url,
+    pdfState.fileName,
+    onAutoEmailSent,
+  ]);
+
+  const isPdfProcessing =
+    pdfState.status === "generating" || pdfState.status === "uploading";
+  const pdfUploadError = pdfState.status === "error" ? pdfState.error : null;
+
+  const handleDownloadPDF = React.useCallback(() => {
+    if (!person || !prospect) return;
+
+    if (!pdfState.blob) {
+      if (pdfState.status === "error") {
+        alert(
+          `Report not available: ${
+            pdfUploadError ?? "Please retry the upload."
+          }`
+        );
+        handleRetryUpload();
+      } else {
+        alert("Report is still being prepared. Please try again shortly.");
+      }
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(pdfState.blob);
+    link.download = `background-report-${prospect.firstName}-${prospect.lastName}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }, [person, prospect, pdfState, pdfUploadError, handleRetryUpload]);
 
   /* Early returns AFTER all hooks */
   if (isLoading) {
@@ -335,26 +486,68 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         </div>
 
         {foundResult && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleDownloadPDF}
-              disabled={!results}
-              className="cursor-pointer text-xs md:text-sm flex items-center px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-            >
-              <Download className="h-3 w-3 mr-1" />
-              <span className="hidden sm:inline">Download PDF</span>
-              <span className="sm:hidden">Download PDF</span>
-            </button>
+          <div className="flex flex-col items-end gap-1 w-full md:w-auto">
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={!results || !pdfState.blob}
+                className="cursor-pointer text-xs md:text-sm flex items-center px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Download PDF</span>
+                <span className="sm:hidden">Download PDF</span>
+              </button>
 
-            <button
-              onClick={() => setIsEmailModalOpen(true)}
-              disabled={!results}
-              className="text-sm cursor-pointer md:text-sm flex items-center px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-            >
-              <Mail className="h-3 w-3 mr-1" />
-              <span className="hidden sm:inline">Send via Email</span>
-              <span className="sm:hidden">Send via Email</span>
-            </button>
+              <button
+                onClick={() => setIsEmailModalOpen(true)}
+                disabled={!results}
+                className="text-sm cursor-pointer md:text-sm flex items-center px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                <Mail className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Send via Email</span>
+                <span className="sm:hidden">Send via Email</span>
+              </button>
+            </div>
+            <div className="text-xs text-right text-gray-600 min-h-[36px] space-y-1">
+              {isPdfProcessing && (
+                <span className="block text-blue-600">
+                  Generating and uploading report to S3…
+                </span>
+              )}
+              {pdfState.status === "uploaded" && (
+                <span className="block text-green-600">
+                  Report stored in S3.
+                </span>
+              )}
+              {pdfState.status === "error" && (
+                <button
+                  type="button"
+                  onClick={handleRetryUpload}
+                  className="block w-full text-red-600 underline"
+                >
+                  Upload failed. Tap to retry.
+                </button>
+              )}
+              {autoSendEmailTo && autoEmailStatus === "sending" && (
+                <span className="block text-blue-600">
+                  Emailing report to {autoSendEmailTo}…
+                </span>
+              )}
+              {autoSendEmailTo && autoEmailStatus === "sent" && (
+                <span className="block text-green-600">
+                  Report emailed to {autoSendEmailTo}.
+                </span>
+              )}
+              {autoSendEmailTo && autoEmailStatus === "error" && (
+                <button
+                  type="button"
+                  onClick={handleRetryAutoEmail}
+                  className="block w-full text-red-600 underline"
+                >
+                  Email delivery failed. Tap to retry.
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -714,6 +907,10 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         reportId={reportIdRef.current}
         personData={person}
         prospect={prospect}
+        pdfUrl={pdfState.s3Url}
+        isPdfUploading={isPdfProcessing}
+        uploadError={pdfUploadError}
+        onRetryUpload={handleRetryUpload}
       />
     </div>
   );

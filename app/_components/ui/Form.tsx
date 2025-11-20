@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ProspectInfo } from "@/types";
 
 import { UserCheck, AlertCircle } from "./icons";
@@ -24,6 +24,10 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
   retries,
 }) => {
   const [formData, setFormData] = useState<ProspectInfo>({ ...inputFields });
+
+  useEffect(() => {
+    setFormData({ ...inputFields });
+  }, [inputFields]);
 
   const today = new Date();
   today.setFullYear(today.getFullYear() - 18);
