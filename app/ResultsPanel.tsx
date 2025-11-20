@@ -59,7 +59,8 @@ type ResultsPanelProps = {
   retries: number;
   prospect: ProspectInfo | null;
   autoSendEmailTo?: string | null;
-  onAutoEmailSent?: () => void;
+  onAutoEmailSent?: (email: string) => void;
+  onAutoEmailError?: (email: string, message: string) => void;
 };
 
 /* ---------- component ---------- */
@@ -71,6 +72,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   prospect,
   autoSendEmailTo,
   onAutoEmailSent,
+  onAutoEmailError,
 }) => {
   /* Hooks must always run in the same order — put them BEFORE any early return */
 
@@ -90,7 +92,8 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     "BCR-" + Math.random().toString(36).slice(2, 8).toUpperCase()
   );
   const generatedOnRef = React.useRef(new Date());
-  const [pdfState, setPdfState] = React.useState<PdfUploadState>(initialPdfState);
+  const [pdfState, setPdfState] =
+    React.useState<PdfUploadState>(initialPdfState);
   const [uploadAttempt, setUploadAttempt] = React.useState(0);
   const handleRetryUpload = React.useCallback(() => {
     setUploadAttempt((prev) => prev + 1);
@@ -98,13 +101,10 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   const [autoEmailStatus, setAutoEmailStatus] = React.useState<
     "idle" | "sending" | "sent" | "error"
   >("idle");
-  const [autoEmailError, setAutoEmailError] = React.useState<string | null>(null);
+  const [autoEmailError, setAutoEmailError] = React.useState<string | null>(
+    null
+  );
   const lastAutoEmailKeyRef = React.useRef<string | null>(null);
-  const handleRetryAutoEmail = React.useCallback(() => {
-    setAutoEmailStatus("idle");
-    setAutoEmailError(null);
-    lastAutoEmailKeyRef.current = null;
-  }, []);
 
   // Merge GPT + PDL into one presentation model
   const { person, foundResult, riskLevel } = React.useMemo(() => {
@@ -248,7 +248,9 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
         if (canceled) return;
 
-        const fileName = `background-report-${reportIdRef.current}-${Date.now()}.pdf`;
+        const fileName = `background-report-${
+          reportIdRef.current
+        }-${Date.now()}.pdf`;
         setPdfState({ status: "uploading", blob: pdfBlob, fileName });
 
         const pdfBase64 = await blobToBase64(pdfBlob);
@@ -297,14 +299,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     return () => {
       canceled = true;
     };
-  }, [
-    person,
-    prospect,
-    foundResult,
-    results,
-    riskLevel,
-    uploadAttempt,
-  ]);
+  }, [person, prospect, foundResult, results, riskLevel, uploadAttempt]);
 
   React.useEffect(() => {
     setAutoEmailStatus("idle");
@@ -365,16 +360,17 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         if (!canceled) {
           lastAutoEmailKeyRef.current = emailKey;
           setAutoEmailStatus("sent");
-          onAutoEmailSent?.();
+          onAutoEmailSent?.(autoSendEmailTo);
         }
       } catch (error) {
         if (!canceled) {
           setAutoEmailStatus("error");
-          setAutoEmailError(
+          const message =
             error instanceof Error
               ? error.message
-              : "Unable to send the report automatically"
-          );
+              : "Unable to send the report automatically";
+          setAutoEmailError(message);
+          onAutoEmailError?.(autoSendEmailTo, message);
         }
       }
     };
@@ -508,17 +504,13 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 <span className="sm:hidden">Send via Email</span>
               </button>
             </div>
-            <div className="text-xs text-right text-gray-600 min-h-[36px] space-y-1">
+            <div className="text-xs text-right text-gray-600 min-h-[18px] space-y-1">
               {isPdfProcessing && (
                 <span className="block text-blue-600">
                   Generating and uploading report to S3…
                 </span>
               )}
-              {pdfState.status === "uploaded" && (
-                <span className="block text-green-600">
-                  Report stored in S3.
-                </span>
-              )}
+
               {pdfState.status === "error" && (
                 <button
                   type="button"
@@ -526,25 +518,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                   className="block w-full text-red-600 underline"
                 >
                   Upload failed. Tap to retry.
-                </button>
-              )}
-              {autoSendEmailTo && autoEmailStatus === "sending" && (
-                <span className="block text-blue-600">
-                  Emailing report to {autoSendEmailTo}…
-                </span>
-              )}
-              {autoSendEmailTo && autoEmailStatus === "sent" && (
-                <span className="block text-green-600">
-                  Report emailed to {autoSendEmailTo}.
-                </span>
-              )}
-              {autoSendEmailTo && autoEmailStatus === "error" && (
-                <button
-                  type="button"
-                  onClick={handleRetryAutoEmail}
-                  className="block w-full text-red-600 underline"
-                >
-                  Email delivery failed. Tap to retry.
                 </button>
               )}
             </div>

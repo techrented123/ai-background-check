@@ -34,7 +34,10 @@ export default function BackgroundCheck() {
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProspectInfo, string>>
   >({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toggleErrors = (name: string) => {
     setErrors((prev) => ({
@@ -75,16 +78,19 @@ export default function BackgroundCheck() {
     return isValid;
   };
 
-  const showToast = useCallback((message: string) => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    setToastMessage(message);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToastMessage(null);
-      toastTimeoutRef.current = null;
-    }, 3000);
-  }, []);
+  const showToast = useCallback(
+    (message: string, variant: "success" | "error" = "success") => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+      setToast({ message, variant });
+      toastTimeoutRef.current = setTimeout(() => {
+        setToast(null);
+        toastTimeoutRef.current = null;
+      }, 3000);
+    },
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -94,9 +100,19 @@ export default function BackgroundCheck() {
     };
   }, []);
 
-  const handleAutoEmailSent = useCallback(() => {
-    showToast("Email sent");
-  }, [showToast]);
+  const handleAutoEmailSent = useCallback(
+    (email: string) => {
+      showToast(`Report emailed to ${email}`, "success");
+    },
+    [showToast]
+  );
+
+  const handleAutoEmailError = useCallback(
+    (email: string, message: string) => {
+      showToast(`Failed to email ${email}: ${message}`, "error");
+    },
+    [showToast]
+  );
 
   const verifyToken = useCallback(
     async (token: string | null) => {
@@ -172,10 +188,14 @@ export default function BackgroundCheck() {
 
   return (
     <div>
-      {toastMessage && (
-        <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
-          <div className="bg-green-600 text-white px-4 py-2 rounded-md shadow-lg">
-            {toastMessage}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex justify-end px-4">
+          <div
+            className={`px-4 py-2 rounded-md shadow-lg text-sm text-white ${
+              toast.variant === "error" ? "bg-red-600" : "bg-green-600"
+            }`}
+          >
+            {toast.message}
           </div>
         </div>
       )}
@@ -212,6 +232,7 @@ export default function BackgroundCheck() {
               prospect={prospectInfo}
               autoSendEmailTo={prospectInfo?.email || null}
               onAutoEmailSent={handleAutoEmailSent}
+              onAutoEmailError={handleAutoEmailError}
             />
           </div>
         </div>

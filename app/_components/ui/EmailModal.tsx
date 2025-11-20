@@ -138,22 +138,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
             />
           </div>
 
-          {/* Landlord Checkbox */}
-          <div className="flex items-center py-1">
-            <input
-              type="checkbox"
-              id="landlordMode"
-              checked={isLandlordMode}
-              onChange={(e) => setIsLandlordMode(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
-            />
-            <label
-              htmlFor="landlordMode"
-              className="ml-3 text-sm font-medium text-gray-700 cursor-pointer"
-            >
-              Send to landlord or another person
-            </label>
-          </div>
+          
 
           {/* Landlord Email Field */}
           {isLandlordMode && (
