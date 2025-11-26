@@ -113,7 +113,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
             htmlFor="other_names"
@@ -139,33 +139,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             </p>
           )}
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            placeholder="Most used email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 border ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              {errors.email}
-            </p>
-          )}
-        </div>
         <div>
           <label
             htmlFor="dob"
@@ -188,6 +161,57 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             <p className="mt-1 text-sm text-red-600 flex items-center">
               <AlertCircle className="h-4 w-4 mr-1" />
               {errors.dob}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            placeholder="Most used email address"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.email ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.email}
+            </p>
+          )}
+        </div>
+        <div>
+          <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Phone
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.phone ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.phone && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.phone}
             </p>
           )}
         </div>
@@ -341,30 +365,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 border ${
-              errors.phone ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          />
-          {errors.phone && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              {errors.phone}
-            </p>
-          )}
-        </div>
-        <div>
-          <label
             htmlFor="company"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
@@ -387,8 +387,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             </p>
           )}
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
             htmlFor="school"
@@ -413,6 +411,8 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             </p>
           )}
         </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4">
         <div>
           <label
             htmlFor="social_media_profile"
@@ -479,7 +479,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
               htmlFor="city2"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              City
+              City / Region
             </label>
             <input
               type="text"
@@ -503,7 +503,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
               htmlFor="state"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Province/State
+              Province / State
             </label>
             <input
               type="text"

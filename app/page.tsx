@@ -64,8 +64,6 @@ export default function BackgroundCheck() {
         key !== "state2" &&
         key !== "location" &&
         key !== "other_names" &&
-        key !== "company" &&
-        key !== "school" &&
         key !== "social_media_profile"
       ) {
         newErrors[key as keyof ProspectInfo] = "This field is required";
@@ -169,7 +167,6 @@ export default function BackgroundCheck() {
             `A network error occurred (HTTP ${response.status}). Please try again.`;
           throw new Error(msg);
         }
-        console.log("🔍 Results:", data);
         setResults(data);
         // Call updateToken on successful background check
         if (token) {
