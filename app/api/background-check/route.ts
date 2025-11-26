@@ -419,14 +419,10 @@ export async function POST(request: NextRequest) {
       data: null,
     };
 
-    console.log("🤖 GPT Result:", gpt);
-    console.log("📋 PDL Result:", pdl);
-
+  
     const ok = Boolean(gpt?.ok || pdl?.ok);
     console.log("🎯 Final Combined Result - OK:", ok);
-    console.log("🤖 GPT OK:", gpt?.ok);
-    console.log("🔄 PDL OK:", pdl?.ok);
-
+    
     const status = ok ? 200 : 502;
     const finalResponse = {
       ok,

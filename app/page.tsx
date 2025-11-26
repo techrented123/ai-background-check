@@ -311,7 +311,7 @@ export default function BackgroundCheck() {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-              {!isFormCollapsed && (
+              {(!isFormCollapsed || mobileActivePanel === "form") && (
                 <div
                   className={`bg-white rounded-lg md:shadow-md p-6 pt-0 w-full transition-all duration-300 ease-in-out ${
                     mobileActivePanel === "form" ? "block" : "hidden md:block"
