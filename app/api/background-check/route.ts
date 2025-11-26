@@ -206,7 +206,8 @@ Email: ${formData.email}
                     role: { type: "string" },
                     link: { type: "string" },
                   },
-                  required: ["name", "link"],
+                  // All keys in properties must be listed in required for OpenAI's json_schema
+                  required: ["name", "role", "link"],
                 },
               },
               short_summary: { type: "string" },
