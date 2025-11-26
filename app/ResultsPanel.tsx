@@ -478,7 +478,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   const isPdfProcessing =
     pdfState.status === "generating" || pdfState.status === "uploading";
   const pdfUploadError = pdfState.status === "error" ? pdfState.error : null;
-
+  console.log("pdfState", pdfState);
   const handleDownloadPDF = React.useCallback(() => {
     if (!person || !prospect) return;
 
