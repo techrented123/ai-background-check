@@ -26,9 +26,11 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<ProspectInfo>({ ...inputFields });
 
+  // Initialize from parent-provided defaults once, but don't reset after each submission
   useEffect(() => {
     setFormData({ ...inputFields });
-  }, [inputFields]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const today = new Date();
   today.setFullYear(today.getFullYear() - 18);
@@ -196,7 +198,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             htmlFor="phone"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Phone
+            Phone (Optional)
           </label>
           <input
             type="tel"
@@ -362,18 +364,182 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           )}
         </div>
       </div>
+      <fieldset className="mb-6">
+        <legend className="block text-sm font-medium text-gray-700 mb-2">
+          Have you lived in the above location for more than 5 years?
+        </legend>
+        <div className="flex space-x-6">
+          {/* Yes Option */}
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="lengthOfStay"
+              value="yes"
+              checked={formData.lengthOfStay === "yes"}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-2 text-sm text-gray-700">Yes</span>
+          </label>
+
+          {/* No Option */}
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="lengthOfStay"
+              value="no"
+              checked={formData.lengthOfStay === "no"}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-2 text-sm text-gray-700">No</span>
+          </label>
+        </div>
+      </fieldset>
+
+      {formData.lengthOfStay === "no" && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="city2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous City / Region
+              </label>
+              <input
+                type="text"
+                id="city2"
+                name="city2"
+                value={formData.city2}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${
+                  errors.city2 ? "border-red-500" : "border-gray-300"
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.city2 && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.city2}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="state2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous Province / State
+              </label>
+              <input
+                type="text"
+                id="state2"
+                name="state2"
+                value={formData.state2}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${
+                  errors.state2 ? "border-red-500" : "border-gray-300"
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.state2 && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.state2}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label
+                htmlFor="street_address2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous Street Address
+              </label>
+              <input
+                type="text"
+                id="street_address2"
+                name="street_address2"
+                value={formData.street_address2 || ""}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${
+                  errors.street_address2 ? "border-red-500" : "border-gray-300"
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.street_address2 && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.street_address2}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="postal_code2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous Postal Code
+              </label>
+              <input
+                type="text"
+                id="postal_code2"
+                name="postal_code2"
+                value={formData.postal_code2 || ""}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${
+                  errors.postal_code2 ? "border-red-500" : "border-gray-300"
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.postal_code2 && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.postal_code2}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label
+                htmlFor="country2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous Country
+              </label>
+              <input
+                type="text"
+                id="country2"
+                name="country2"
+                value={formData.country2 || ""}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${
+                  errors.country2 ? "border-red-500" : "border-gray-300"
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.country2 && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.country2}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
             htmlFor="company"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Company
+             Company 
           </label>
           <input
             type="text"
             id="company"
             name="company"
+            placeholder="Most Recent Employer"
             value={formData.company}
             onChange={handleChange}
             className={`w-full px-3 py-2 border ${
@@ -400,6 +566,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             name="school"
             value={formData.school}
             onChange={handleChange}
+            placeholder="Most Recent School"
             className={`w-full px-3 py-2 border ${
               errors.school ? "border-red-500" : "border-gray-300"
             } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -439,91 +606,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           )}
         </div>
       </div>
-      <fieldset className="mb-6">
-        <legend className="block text-sm font-medium text-gray-700 mb-2">
-          Have you lived in the above location for more than 5 years?
-        </legend>
-        <div className="flex space-x-6">
-          {/* Yes Option */}
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="lengthOfStay"
-              value="yes"
-              checked={formData.lengthOfStay === "yes"}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="ml-2 text-sm text-gray-700">Yes</span>
-          </label>
-
-          {/* No Option */}
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="lengthOfStay"
-              value="no"
-              checked={formData.lengthOfStay === "no"}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="ml-2 text-sm text-gray-700">No</span>
-          </label>
-        </div>
-      </fieldset>
-
-      {formData.lengthOfStay === "no" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="city2"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              City / Region
-            </label>
-            <input
-              type="text"
-              id="city2"
-              name="city2"
-              value={formData.city2}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border ${
-                errors.city ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-            {errors.city2 && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.city2}
-              </p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="state"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Province / State
-            </label>
-            <input
-              type="text"
-              id="state2"
-              name="state2"
-              value={formData.state2}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border ${
-                errors.state2 ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-            {errors.state2 && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.state2}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
       <div className="mt-6">
         {retries >= 3 ? (
           <Tooltip text="You have a max of 3 attempts">

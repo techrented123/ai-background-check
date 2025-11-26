@@ -12,6 +12,9 @@ export interface ProspectInfo {
   country: string;
   city2: string | undefined;
   state2: string | undefined;
+  street_address2?: string;
+  postal_code2?: string;
+  country2?: string;
   dob: string;
   lengthOfStay: "yes" | "no";
   company: string;

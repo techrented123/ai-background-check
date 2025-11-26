@@ -33,6 +33,9 @@ export default function BackgroundCheck() {
     country: "",
     city2: "",
     state2: "",
+    street_address2: "",
+    postal_code2: "",
+    country2: "",
     dob: "",
     lengthOfStay: "yes",
     company: "",
@@ -62,9 +65,13 @@ export default function BackgroundCheck() {
         !value &&
         key !== "city2" &&
         key !== "state2" &&
+        key !== "street_address2" &&
+        key !== "postal_code2" &&
+        key !== "country2" &&
         key !== "location" &&
         key !== "other_names" &&
-        key !== "social_media_profile"
+        key !== "social_media_profile" &&
+        key !== "phone"
       ) {
         newErrors[key as keyof ProspectInfo] = "This field is required";
         isValid = false;
@@ -78,9 +85,24 @@ export default function BackgroundCheck() {
           newErrors["state2"] = "This field is required";
           isValid = false;
         }
+        if (!formData["street_address2"]) {
+          newErrors["street_address2"] = "This field is required";
+          isValid = false;
+        }
+        if (!formData["postal_code2"]) {
+          newErrors["postal_code2"] = "This field is required";
+          isValid = false;
+        }
+        if (!formData["country2"]) {
+          newErrors["country2"] = "This field is required";
+          isValid = false;
+        }
       } else if (formData["lengthOfStay"] === "yes") {
         formData["city2"] = undefined;
         formData["state2"] = undefined;
+        formData["street_address2"] = undefined;
+        formData["postal_code2"] = undefined;
+        formData["country2"] = undefined;
       }
     });
 
@@ -186,7 +208,7 @@ export default function BackgroundCheck() {
     [token]
   );
 
-  useEffect(() => {
+ /*  useEffect(() => {
     if (!token) {
       router.push("/404");
     } else {
@@ -195,7 +217,7 @@ export default function BackgroundCheck() {
     const retries = localStorage.getItem("retries");
     if (retries) setRetries(JSON.parse(retries));
   }, [token, verifyToken, router]);
-
+ */
   useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);

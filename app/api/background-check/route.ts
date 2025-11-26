@@ -256,19 +256,35 @@ async function fetchViaPDL(body: ProspectInfo) {
   }
 
   const apiKey = process.env.NEXT_PUBLIC_PDL_API_KEY;
+
+  // Decide whether to use current or previous address based on lengthOfStay
+  const usePrevious =
+    body.lengthOfStay === "no" &&
+    Boolean(body.city2 && body.state2 && body.country2);
+
+  const locality = usePrevious && body.city2 ? body.city2 : body.city;
+  const region = usePrevious && body.state2 ? body.state2 : body.state;
+  const street_address =
+    usePrevious && body.street_address2
+      ? body.street_address2
+      : body.street_address;
+  const postal_code =
+    usePrevious && body.postal_code2 ? body.postal_code2 : body.postal_code;
+  const country = usePrevious && body.country2 ? body.country2 : body.country;
+
   // --- 3. Construct the request payload for the PDL API ---
-  // We use the exact field names required by the PDL Identify API.
+  // We use the exact field names required by the PDL Enrichment API.
   const pdlParams = {
     first_name: body.firstName,
     last_name: body.lastName,
     middle_name: body.other_names, // Will be undefined if not provided, which is fine
-    locality: body.city, // 'locality' is the PDL term for city
-    region: body.state, // 'region' is the PDL term for state/province
+    locality, // 'locality' is the PDL term for city
+    region, // 'region' is the PDL term for state/province
     birth_date: body.dob,
-    street_address: body.street_address,
-    postal_code: body.postal_code,
-    country: body.country,
-    phone: body.phone,
+    street_address,
+    postal_code,
+    country,
+    phone: body.phone || null,
     email: body.email,
     profile: body?.social_media_profile || null,
     company: body.company,
@@ -297,6 +313,7 @@ async function fetchViaPDL(body: ProspectInfo) {
     const pdlData = await response.json().catch(() => ({}));
     console.log(
       "📋 People Data Labs Response:",
+      pdlParams,
       JSON.stringify(pdlData, null, 2)
     );
 
