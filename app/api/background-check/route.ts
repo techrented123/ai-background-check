@@ -377,6 +377,14 @@ async function fetchViaPDL(body: ProspectInfo) {
     locality: body.city, // 'locality' is the PDL term for city
     region: body.state, // 'region' is the PDL term for state/province
     birth_date: body.dob,
+    street_address: body.street_address,
+    postal_code: body.postal_code,
+    country: body.country,
+    phone: body.phone,
+    email: body.email,
+    profile: body?.social_media_profile || null,
+    company: body.company,
+    school: body.school,
   };
   try {
     const searchParams = new URLSearchParams();
@@ -388,7 +396,7 @@ async function fetchViaPDL(body: ProspectInfo) {
       }
     }
 
-    const url = `https://api.peopledatalabs.com/v5/person/identify?${searchParams.toString()}`;
+    const url = `https://api.peopledatalabs.com/v5/person/enrich?${searchParams.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -415,22 +423,13 @@ async function fetchViaPDL(body: ProspectInfo) {
           `PDL error ${response.status}`,
       };
     }
-    const matches = pdlData.matches;
 
     // --- 5. Handle the response from PDL ---
     // A status of 200 from PDL indicates a successful match was found.
-    if (pdlData.status === 200) {
-      const selectedMatch =
-        matches.length > 1
-          ? matches.sort((a: any, b: any) => b.match_score - a.match_score)[0]
-          : matches[0];
-
-      // Validate PDL employment data if it exists
-      if (selectedMatch?.data?.experience) {
-        const originalExperiences = selectedMatch.data.experience.length;
-
-        // Convert PDL experience format to our format for validation
-        const employmentData = selectedMatch.data.experience.map((exp: any) => ({
+    if (pdlData.status === 200 && pdlData.data) {
+      const person = pdlData.data;
+      if (Array.isArray(person.experience)) {
+        const employmentData = person.experience.map((exp: any) => ({
           company: exp.company?.name || "",
           position: exp.title?.name || "",
           start_date: exp.start_date || "",
@@ -438,13 +437,22 @@ async function fetchViaPDL(body: ProspectInfo) {
         }));
 
         const validatedEmployment = validateEmploymentData(employmentData);
-        console.log(`🎯 PDL Original experiences: ${originalExperiences}`);
-        console.log(
-          `✅ PDL Validated experiences: ${validatedEmployment.length}`
-        );
+        if (validatedEmployment.length < person.experience.length) {
+          person.experience = validatedEmployment.map((job) => ({
+            company: { name: job.company },
+            title: { name: job.position },
+            start_date: job.start_date,
+            end_date: job.end_date,
+          }));
+          if (validatedEmployment.length === 0) {
+            person.experience = [];
+          }
+        }
 
+        // Keep your existing shape: finalResponse expects pdl.data.data
+        //return { ok: true, data: pdlData };
         // Convert back to PDL format and update the match
-        if (validatedEmployment.length < originalExperiences) {
+        /* if (validatedEmployment.length < originalExperiences) {
           selectedMatch.data.experience = validatedEmployment.map((job) => ({
             company: { name: job.company },
             title: { name: job.position },
@@ -456,10 +464,10 @@ async function fetchViaPDL(body: ProspectInfo) {
           if (validatedEmployment.length === 0) {
             selectedMatch.data.experience = [];
           }
-        }
+        } */
       }
 
-      return { ok: true, data: selectedMatch };
+      return { ok: true, data: pdlData };
     }
 
     // PDL returns a 404 if no match is found for the given criteria.
