@@ -20,6 +20,9 @@ export default function BackgroundCheck() {
   const [results, setResults] = useState<BackgroundCheckResult | null>(null);
   const [prospectInfo, setProspectInfo] = useState<ProspectInfo | null>(null);
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
+  const [mobileActivePanel, setMobileActivePanel] = useState<
+    "form" | "results"
+  >("form");
   const inputFields: ProspectInfo = {
     firstName: "",
     lastName: "",
@@ -235,6 +238,15 @@ export default function BackgroundCheck() {
     }
   }, [hasResults]);
 
+  // Mobile: keep only one panel visible at a time, and auto-focus results on submit
+  useEffect(() => {
+    if (isLoading || hasResults) {
+      setMobileActivePanel("results");
+    } else {
+      setMobileActivePanel("form");
+    }
+  }, [isLoading, hasResults]);
+
   return (
     <div>
       {toast && (
@@ -269,74 +281,111 @@ export default function BackgroundCheck() {
 
         {/* After submit / when loading or results exist: split layout with toggle */}
         {showResultsPanel && (
-          <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-            {!isFormCollapsed && (
-              <div className="bg-white rounded-lg md:shadow-md p-6 pt-0 w-full md:w-1/2 transition-all duration-300 ease-in-out">
-                <Form
-                  onSubmit={handleSubmit}
-                  isLoading={isLoading}
-                  onValidateForm={validateForm}
-                  inputFields={inputFields}
-                  errors={errors}
-                  toggleErrors={toggleErrors}
-                  retries={retries}
-                />
-              </div>
-            )}
-
-            <div
-              className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0 w-full transition-all duration-300 ease-in-out ${
-                isFormCollapsed ? "md:w-full" : "md:w-1/2"
-              }`}
-            >
-              <div className="flex items-center justify-end mb-2 md:mb-4">
+          <>
+            {/* Mobile-only tab-style toggle between Form and Results */}
+            <div className="flex justify-center mb-3 md:hidden">
+              <div className="inline-flex items-center rounded-full bg-gray-100 p-1 text-xs">
                 <button
                   type="button"
-                  onClick={() => setIsFormCollapsed((prev) => !prev)}
-                  className="cursor-pointer inline-flex items-center space-x-1 rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-xs md:text-sm text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 transition-all duration-200"
-                  aria-label={
-                    isFormCollapsed
-                      ? "Expand form panel"
-                      : "Collapse form panel"
-                  }
-                  aria-pressed={!isFormCollapsed}
+                  onClick={() => setMobileActivePanel("form")}
+                  className={`px-3 py-1 rounded-full transition-all ${
+                    mobileActivePanel === "form"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500"
+                  }`}
                 >
-                  <span>{isFormCollapsed ? "Show form" : "Hide form"}</span>
-                  <span
-                    className={`inline-block transform transition-transform duration-200 ${
-                      isFormCollapsed ? "" : "rotate-180"
-                    }`}
-                    aria-hidden="true"
-                  >
-                    <svg
-                      className="h-3 w-3 md:h-4 md:w-4"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M7 5L12 10L7 15"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                  Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileActivePanel("results")}
+                  className={`px-3 py-1 rounded-full transition-all ${
+                    mobileActivePanel === "results"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  Results
                 </button>
               </div>
-              <ResultsPanel
-                results={results}
-                isLoading={isLoading}
-                error={apiError}
-                retries={retries}
-                prospect={prospectInfo}
-                autoSendEmailTo={prospectInfo?.email || null}
-                onAutoEmailSent={handleAutoEmailSent}
-                onAutoEmailError={handleAutoEmailError}
-              />
             </div>
-          </div>
+
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+              {!isFormCollapsed && (
+                <div
+                  className={`bg-white rounded-lg md:shadow-md p-6 pt-0 w-full transition-all duration-300 ease-in-out ${
+                    mobileActivePanel === "form" ? "block" : "hidden md:block"
+                  } md:w-1/2`}
+                >
+                  <Form
+                    onSubmit={handleSubmit}
+                    isLoading={isLoading}
+                    onValidateForm={validateForm}
+                    inputFields={inputFields}
+                    errors={errors}
+                    toggleErrors={toggleErrors}
+                    retries={retries}
+                  />
+                </div>
+              )}
+
+              <div
+                className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0 w-full transition-all duration-300 ease-in-out ${
+                  isFormCollapsed ? "md:w-full" : "md:w-1/2"
+                } ${
+                  mobileActivePanel === "results" ? "block" : "hidden md:block"
+                }`}
+              >
+                <div className="flex items-center justify-end mb-2 md:mb-4">
+                  {/* Desktop toggle to hide/show form; hidden on mobile */}
+                  <button
+                    type="button"
+                    onClick={() => setIsFormCollapsed((prev) => !prev)}
+                    className="hidden md:inline-flex cursor-pointer items-center space-x-1 rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-xs md:text-sm text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 transition-all duration-200"
+                    aria-label={
+                      isFormCollapsed
+                        ? "Expand form panel"
+                        : "Collapse form panel"
+                    }
+                    aria-pressed={!isFormCollapsed}
+                  >
+                    <span>{isFormCollapsed ? "Show form" : "Hide form"}</span>
+                    <span
+                      className={`inline-block transform transition-transform duration-200 ${
+                        isFormCollapsed ? "" : "rotate-180"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <svg
+                        className="h-3 w-3 md:h-4 md:w-4"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M7 5L12 10L7 15"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+                <ResultsPanel
+                  results={results}
+                  isLoading={isLoading}
+                  error={apiError}
+                  retries={retries}
+                  prospect={prospectInfo}
+                  autoSendEmailTo={prospectInfo?.email || null}
+                  onAutoEmailSent={handleAutoEmailSent}
+                  onAutoEmailError={handleAutoEmailError}
+                />
+              </div>
+            </div>
+          </>
         )}
       </main>
     </div>
