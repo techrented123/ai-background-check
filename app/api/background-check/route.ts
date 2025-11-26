@@ -419,17 +419,24 @@ export async function POST(request: NextRequest) {
       data: null,
     };
 
-  
     const ok = Boolean(gpt?.ok || pdl?.ok);
     console.log("🎯 Final Combined Result - OK:", ok);
-    
-    const status = ok ? 200 : 502;
+
+    // If PDL simply didn't find a match (404), treat this as a "soft" miss:
+    // return 200 with ok=false so the UI can show a friendly "not found" message
+    const pdlHttpStatus = (pdlResult as any)?.http;
+    const pdlNoMatch =
+      pdlResult && pdlResult.ok === false && pdlHttpStatus === 404;
+
+    const status = ok || pdlNoMatch ? 200 : 502;
     const finalResponse = {
       ok,
       gpt,
       pdl: {
         ok: pdl?.ok,
         data: pdl?.data?.data,
+        http: pdlHttpStatus,
+        error: (pdlResult as any)?.error,
         //match_score: pdl?.match_score,
       },
     };
