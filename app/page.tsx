@@ -208,7 +208,7 @@ export default function BackgroundCheck() {
     [token]
   );
 
- /*  useEffect(() => {
+  useEffect(() => {
     if (!token) {
       router.push("/404");
     } else {
@@ -217,7 +217,7 @@ export default function BackgroundCheck() {
     const retries = localStorage.getItem("retries");
     if (retries) setRetries(JSON.parse(retries));
   }, [token, verifyToken, router]);
- */
+
   useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);

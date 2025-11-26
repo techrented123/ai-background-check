@@ -49,26 +49,6 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     return canadianPostalCodeRegex.test(postalCode);
   };
 
-  // Canadian province validation
-  const isValidCanadianProvince = (province: string): boolean => {
-    const canadianProvinces = [
-      "Alberta",
-      "British Columbia",
-      "Manitoba",
-      "New Brunswick",
-      "Newfoundland and Labrador",
-      "Northwest Territories",
-      "Nova Scotia",
-      "Nunavut",
-      "Ontario",
-      "Prince Edward Island",
-      "Québec",
-      "Saskatchewan",
-      "Yukon",
-    ];
-    return canadianProvinces.includes(province);
-  };
-
   const handleOnPlacesChanged = useCallback(() => {
     let address;
     if (inputRef.current) {
@@ -133,7 +113,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         apartmentUnit: "",
       });
     }
-  }, [onChange, onAddressSelect]);
+  }, [onChange, onAddressSelect, restrictToCanada]);
 
   const loadHandler = useCallback((ref: any) => {
     inputRef.current = ref;
