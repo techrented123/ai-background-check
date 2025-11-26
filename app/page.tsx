@@ -271,7 +271,7 @@ export default function BackgroundCheck() {
         {showResultsPanel && (
           <div className="flex flex-col md:flex-row gap-4 md:gap-8">
             {!isFormCollapsed && (
-              <div className="bg-white rounded-lg md:shadow-md p-6 pt-0 w-full md:w-1/2">
+              <div className="bg-white rounded-lg md:shadow-md p-6 pt-0 w-full md:w-1/2 transition-all duration-300 ease-in-out">
                 <Form
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
@@ -285,7 +285,7 @@ export default function BackgroundCheck() {
             )}
 
             <div
-              className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0 w-full ${
+              className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0 w-full transition-all duration-300 ease-in-out ${
                 isFormCollapsed ? "md:w-full" : "md:w-1/2"
               }`}
             >
@@ -293,14 +293,36 @@ export default function BackgroundCheck() {
                 <button
                   type="button"
                   onClick={() => setIsFormCollapsed((prev) => !prev)}
-                  className="inline-flex items-center rounded-full border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center space-x-1 rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-indigo-500 px-3 py-1.5 text-xs md:text-sm text-white shadow-sm hover:from-indigo-500 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition-all duration-200"
                   aria-label={
                     isFormCollapsed
                       ? "Expand form panel"
                       : "Collapse form panel"
                   }
+                  aria-pressed={!isFormCollapsed}
                 >
-                  {isFormCollapsed ? "Show form" : "Hide form"}
+                  <span>{isFormCollapsed ? "Show form" : "Hide form"}</span>
+                  <span
+                    className={`inline-block transform transition-transform duration-200 ${
+                      isFormCollapsed ? "" : "rotate-180"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg
+                      className="h-3 w-3 md:h-4 md:w-4"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7 5L12 10L7 15"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
                 </button>
               </div>
               <ResultsPanel
