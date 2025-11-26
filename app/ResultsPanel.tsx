@@ -74,13 +74,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 }) => {
   /* Hooks must always run in the same order — put them BEFORE any early return */
 
-  // Mobile auto-scroll when data/error appears
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.innerWidth <= 768 && (error || results)) {
-      window.scrollTo(0, document.body.scrollHeight);
-    }
-  }, [error, results]);
 
   // Email modal state
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
