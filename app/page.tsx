@@ -19,6 +19,7 @@ export default function BackgroundCheck() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [results, setResults] = useState<BackgroundCheckResult | null>(null);
   const [prospectInfo, setProspectInfo] = useState<ProspectInfo | null>(null);
+  const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const inputFields: ProspectInfo = {
     firstName: "",
     lastName: "",
@@ -222,6 +223,18 @@ export default function BackgroundCheck() {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
 
+  const hasResults = Boolean(results);
+  const showResultsPanel = isLoading || hasResults;
+
+  useEffect(() => {
+    // When we first get results, default to a wide ResultsPanel / compact form.
+    if (hasResults) {
+      setIsFormCollapsed(true);
+    } else {
+      setIsFormCollapsed(false);
+    }
+  }, [hasResults]);
+
   return (
     <div>
       {toast && (
@@ -236,42 +249,73 @@ export default function BackgroundCheck() {
         </div>
       )}
       <Header />
-      <main
-        className={`md:container mx-auto md:px-4 px-1 py-3 md:py-8 ${
-          results ? "h-[500px]" : "max-h-[60vh]"
-        }`}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <p className="text-lg font-semibold mt-5 text-center text-[#293074] md:hidden">
-            Intelligent Background Check
-          </p>
-          <div className={`bg-white rounded-lg md:shadow-md p-6 pt-0`}>
-            <Form
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-              onValidateForm={validateForm}
-              inputFields={inputFields}
-              errors={errors}
-              toggleErrors={toggleErrors}
-              retries={retries}
-            />
+      <main className="md:container mx-auto md:px-4 px-1 py-3 md:py-8">
+        {/* Initial load: show only the form full-width */}
+        {!showResultsPanel && (
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-lg md:shadow-md p-6 pt-0">
+              <Form
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                onValidateForm={validateForm}
+                inputFields={inputFields}
+                errors={errors}
+                toggleErrors={toggleErrors}
+                retries={retries}
+              />
+            </div>
           </div>
+        )}
 
-          <div
-            className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0`}
-          >
-            <ResultsPanel
-              results={results}
-              isLoading={isLoading}
-              error={apiError}
-              retries={retries}
-              prospect={prospectInfo}
-              autoSendEmailTo={prospectInfo?.email || null}
-              onAutoEmailSent={handleAutoEmailSent}
-              onAutoEmailError={handleAutoEmailError}
-            />
+        {/* After submit / when loading or results exist: split layout with toggle */}
+        {showResultsPanel && (
+          <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+            {!isFormCollapsed && (
+              <div className="bg-white rounded-lg md:shadow-md p-6 pt-0 w-full md:w-1/2">
+                <Form
+                  onSubmit={handleSubmit}
+                  isLoading={isLoading}
+                  onValidateForm={validateForm}
+                  inputFields={inputFields}
+                  errors={errors}
+                  toggleErrors={toggleErrors}
+                  retries={retries}
+                />
+              </div>
+            )}
+
+            <div
+              className={`bg-white rounded-lg p-1 md:p-6 md:shadow-md mt-[-10px] md:mt-0 w-full ${
+                isFormCollapsed ? "md:w-full" : "md:w-1/2"
+              }`}
+            >
+              <div className="flex items-center justify-end mb-2 md:mb-4">
+                <button
+                  type="button"
+                  onClick={() => setIsFormCollapsed((prev) => !prev)}
+                  className="inline-flex items-center rounded-full border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  aria-label={
+                    isFormCollapsed
+                      ? "Expand form panel"
+                      : "Collapse form panel"
+                  }
+                >
+                  {isFormCollapsed ? "Show form" : "Hide form"}
+                </button>
+              </div>
+              <ResultsPanel
+                results={results}
+                isLoading={isLoading}
+                error={apiError}
+                retries={retries}
+                prospect={prospectInfo}
+                autoSendEmailTo={prospectInfo?.email || null}
+                onAutoEmailSent={handleAutoEmailSent}
+                onAutoEmailError={handleAutoEmailError}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
