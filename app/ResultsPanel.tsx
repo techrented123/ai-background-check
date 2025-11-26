@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { BackgroundCheckResult, ProspectInfo } from "@/types";
 import { Download, FileText, InfoIcon, Mail } from "./_components/ui/icons";
@@ -105,37 +104,32 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   );
   const lastAutoEmailKeyRef = React.useRef<string | null>(null);
 
-  // Merge GPT + PDL into one presentation model
+  // Merge GPT OSINT + PDL data into one presentation model
   const { person, foundResult, riskLevel } = React.useMemo(() => {
     const r: any = results ?? {};
     const gpt = r?.gpt;
     const pdl = r?.pdl;
-    const foundResult = Boolean(gpt?.data.foundPerson || pdl?.ok);
+    const pdlRoot = pdl?.ok ? pdl?.data : null;
+    const foundResult = Boolean(pdlRoot);
 
-    // Base from GPT
+    // Base facts now come from PDL + our own risk model
     const base = {
-      employment_history:
-        gpt?.data?.employment_history?.map((exp: any) => ({
-          start_date: exp?.start_date,
-          end_date: exp?.end_date,
-          company: exp?.company,
-          position: exp?.position,
-        })) ?? [],
-      short_summary: gpt?.data.foundPerson ? gpt?.data?.short_summary : "",
+      employment_history: [] as any[],
+      short_summary: "",
       education_history: [],
-      legal_appearances: gpt?.data?.legal_appearances ?? [],
-      company_registrations: gpt?.data?.company_registrations ?? [],
-      press_mentions: gpt?.data?.press_mentions ?? [],
-      social_media_profiles: gpt?.data?.social_media_profiles ?? [],
-      location_history: gpt?.data?.location_history ?? [], //
-      public_comments: gpt?.data?.public_comments ?? [],
-      others: gpt?.data?.others ?? [],
+      legal_appearances: [] as any[],
+      company_registrations: [] as any[],
+      press_mentions: [] as any[],
+      social_media_profiles: [] as any[],
+      location_history: [] as any[],
+      public_comments: [] as any[],
+      others: [] as any[],
     };
-    console.log(base.others);
+
     const meta = {
       gptOk: gpt?.ok,
       pdlOk: pdl?.ok,
-      pdlMatchScore: pdl?.data?.[0]?.match_score ?? pdl?.match_score, // if available
+      pdlMatchScore: undefined,
       //sanctionsCount: sanctions?.matches?.length ?? sanctions?.length ?? 0,
     };
 
@@ -143,8 +137,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       base.education_history = [];
     }
 
-    // Merge PDL if OK
-    const pdlRoot = pdl?.ok ? pdl?.data : null;
     if (pdlRoot) {
       const pdlExperience =
         pdlRoot?.experience?.map((exp: any) => ({
@@ -177,33 +169,104 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           link: p?.url,
         })) ?? [];
 
-      const includeGptEmployment =
-        !pdlRoot?.job_title && !pdlRoot?.job_company_name;
-
-      base.employment_history = [
-        ...(includeGptEmployment ? base.employment_history : []),
-        ...pdlExperience,
-      ];
+      base.employment_history = [...pdlExperience];
       if (pdlEducation.length) base.education_history = pdlEducation;
       base.social_media_profiles = [
         ...base.social_media_profiles,
         ...pdlProfiles,
       ];
 
+      // Collect PDL-derived locations (regions + experience + education)
+      const locationStrings: string[] = [];
+
       const extraRegions = Array.isArray(pdl?.data?.regions)
         ? pdl.data.regions
         : [];
-      base.location_history = [...base.location_history, ...extraRegions];
+      if (extraRegions?.length) {
+        locationStrings.push(
+          ...extraRegions.map((r: any) => String(r)).filter(Boolean)
+        );
+      }
+
+      // From experience company locations
+      if (Array.isArray(pdlRoot.experience)) {
+        for (const exp of pdlRoot.experience) {
+          const loc = exp?.company?.location || exp?.location;
+          if (loc) {
+            const city =
+              loc.locality || loc.city || loc.town || loc.municipality || "";
+            const state = loc.region || loc.state || "";
+            const country = loc.country || "";
+            const label = [city, state, country].filter(Boolean).join(", ");
+            if (label) locationStrings.push(label);
+          }
+        }
+      }
+
+      // From education school locations
+      if (Array.isArray(pdlRoot.education)) {
+        for (const edu of pdlRoot.education) {
+          const loc = edu?.school?.location;
+          if (loc) {
+            const city =
+              loc.locality || loc.city || loc.town || loc.municipality || "";
+            const state = loc.region || loc.state || "";
+            const country = loc.country || "";
+            const label = [city, state, country].filter(Boolean).join(", ");
+            if (label) locationStrings.push(label);
+          }
+        }
+      }
+
+      // Deduplicate PDL locations
+      base.location_history = Array.from(new Set(locationStrings));
     }
+    // Enrich with GPT OSINT (press + social + location) if available
+    const gptData = gpt?.ok ? gpt.data : null;
+    if (gptData) {
+      if (Array.isArray(gptData.press_mentions)) {
+        base.press_mentions = gptData.press_mentions;
+      }
+      if (Array.isArray(gptData.social_media_profiles)) {
+        base.social_media_profiles = Array.from(
+          new Set([
+            ...base.social_media_profiles,
+            ...gptData.social_media_profiles,
+          ])
+        );
+      }
+      if (Array.isArray(gptData.location_history)) {
+        const gptLocations = gptData.location_history
+          .map((loc: any) => {
+            const city = loc.city || loc.locality || "";
+            const state = loc.state || loc.region || "";
+            const country = loc.country || "";
+            const label = [city, state, country].filter(Boolean).join(", ");
+            return label || null;
+          })
+          .filter(Boolean) as string[];
+
+        base.location_history = Array.from(
+          new Set([...(base.location_history as any[]), ...gptLocations])
+        );
+      }
+      if (Array.isArray(gptData.company_registrations)) {
+        base.company_registrations = gptData.company_registrations;
+      }
+    }
+
     const pdlSentence = buildPDLEnhancedSummary(
       base,
       `${prospect?.firstName ?? ""} ${prospect?.lastName ?? ""}`.trim()
     );
-    //gpt?.data?.foundPerson ? gpt?.data?.short_summary : ""
-    base.short_summary = mergeSummaries(
-      gpt?.data?.foundPerson ? gpt?.data?.short_summary.trim() : "",
-      pdlSentence
-    );
+
+    const gptSummary =
+      typeof gptData?.short_summary === "string"
+        ? gptData.short_summary.trim()
+        : "";
+
+    // Combine GPT-written summary with our deterministic PDL-based sentence
+    base.short_summary = mergeSummaries(gptSummary, pdlSentence);
 
     const { level, score, reasons } = assessTenantRisk(base, meta);
 
@@ -294,7 +357,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       }
     };
 
-    prepareAndUploadPdf();
+    //prepareAndUploadPdf();
 
     return () => {
       canceled = true;
