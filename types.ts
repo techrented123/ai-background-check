@@ -3,12 +3,19 @@ export interface ProspectInfo {
   lastName: string;
   other_names?: string;
   email: string;
+  phone: string;
+  street_address: string;
   city: string;
   state: string;
+  postal_code: string;
+  country: string;
   city2: string | undefined;
   state2: string | undefined;
   dob: string;
   lengthOfStay: "yes" | "no";
+  company: string;
+  school: string;
+  social_media_profile: string;
 }
 interface OtherOnlineActivty {
   note: string;

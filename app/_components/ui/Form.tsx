@@ -3,6 +3,7 @@ import { ProspectInfo } from "@/types";
 
 import { UserCheck, AlertCircle } from "./icons";
 import Tooltip from "./Tooltip/Tooltip";
+import AddressAutocomplete from "./AddressAutocomplete";
 
 interface BackgroundCheckFormProps {
   onSubmit: (info: ProspectInfo) => void;
@@ -191,13 +192,59 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           )}
         </div>
       </div>
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <label
+            htmlFor="street_address"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Street Address
+          </label>
+          <AddressAutocomplete
+            name="street_address"
+            value={formData.street_address}
+            onChange={(value) => {
+              setFormData((prev) => ({
+                ...prev,
+                street_address: value,
+              }));
+              if (errors.street_address) {
+                toggleErrors("street_address");
+              }
+            }}
+            onAddressSelect={({
+              street,
+              city,
+              province,
+              postalCode,
+              country,
+            }) => {
+              setFormData((prev) => ({
+                ...prev,
+                street_address: street,
+                city,
+                state: province,
+                postal_code: postalCode,
+                country,
+              }));
+              if (errors.street_address) toggleErrors("street_address");
+              if (errors.city) toggleErrors("city");
+              if (errors.state) toggleErrors("state");
+              if (errors.postal_code) toggleErrors("postal_code");
+              if (errors.country) toggleErrors("country");
+            }}
+            placeholder="Enter your address"
+            error={errors.street_address}
+          />
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
             htmlFor="city"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            City
+            City / Region
           </label>
           <input
             type="text"
@@ -237,6 +284,157 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             <p className="mt-1 text-sm text-red-600 flex items-center">
               <AlertCircle className="h-4 w-4 mr-1" />
               {errors.state}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="country"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Country
+          </label>
+          <input
+            type="text"
+            id="country"
+            name="country"
+            value={formData.country}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.country ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.country && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.country}
+            </p>
+          )}
+        </div>
+        <div>
+          <label
+            htmlFor="postal_code"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Postal Code
+          </label>
+          <input
+            type="text"
+            id="postal_code"
+            name="postal_code"
+            value={formData.postal_code}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.postal_code ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.postal_code && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.postal_code}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Phone
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.phone ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.phone && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.phone}
+            </p>
+          )}
+        </div>
+        <div>
+          <label
+            htmlFor="company"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Company
+          </label>
+          <input
+            type="text"
+            id="company"
+            name="company"
+            value={formData.company}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.company ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.company && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.company}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="school"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            School
+          </label>
+          <input
+            type="text"
+            id="school"
+            name="school"
+            value={formData.school}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.school ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.school && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.school}
+            </p>
+          )}
+        </div>
+        <div>
+          <label
+            htmlFor="social_media_profile"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Social Media Profile (Optional)
+          </label>
+          <input
+            type="url"
+            id="social_media_profile"
+            name="social_media_profile"
+            placeholder="LinkedIn, Facebook, etc."
+            value={formData.social_media_profile}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.social_media_profile ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.social_media_profile && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.social_media_profile}
             </p>
           )}
         </div>

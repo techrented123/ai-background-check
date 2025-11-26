@@ -24,12 +24,19 @@ export default function BackgroundCheck() {
     lastName: "",
     other_names: "",
     email: "",
+    phone: "",
+    street_address: "",
     city: "",
     state: "",
-    dob: "",
+    postal_code: "",
+    country: "",
     city2: "",
     state2: "",
+    dob: "",
     lengthOfStay: "yes",
+    company: "",
+    school: "",
+    social_media_profile: "",
   };
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProspectInfo, string>>
@@ -54,7 +61,10 @@ export default function BackgroundCheck() {
         !value &&
         key !== "city2" &&
         key !== "state2" &&
-        key !== "other_names"
+        key !== "other_names" &&
+        key !== "company" &&
+        key !== "school" &&
+        key !== "social_media_profile"
       ) {
         newErrors[key as keyof ProspectInfo] = "This field is required";
         isValid = false;
@@ -126,53 +136,58 @@ export default function BackgroundCheck() {
     [router]
   );
 
-  const handleSubmit = useCallback(async (prospectInfo: ProspectInfo) => {
-    setIsLoading(true);
-    setApiError(null);
-    setProspectInfo(prospectInfo);
-    setRetries((prev) => (prev <= 3 ? prev + 1 : prev));
-    try {
-      const response = await fetch("/api/background-check", {
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...prospectInfo }),
-      });
-      const raw = await response.text();
-      let data = null;
+  const handleSubmit = useCallback(
+    async (prospectInfo: ProspectInfo) => {
+      setIsLoading(true);
+      setApiError(null);
+      setProspectInfo(prospectInfo);
+      setRetries((prev) => (prev <= 3 ? prev + 1 : prev));
       try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch {
-        // If the server returned HTML or non-JSON, keep raw
-        data = { error: raw };
-      }
+        const response = await fetch("/api/background-check", {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...prospectInfo }),
+        });
+        const raw = await response.text();
+        let data = null;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch {
+          // If the server returned HTML or non-JSON, keep raw
+          data = { error: raw };
+        }
 
-      if (!response.ok) {
-        // Server-side failure (e.g., 502 when both providers actually crashed)
-        const msg =
-          data?.error ||
-          data?.message ||
-          `A network error occurred (HTTP ${response.status}). Please try again.`;
-        throw new Error(msg);
+        if (!response.ok) {
+          // Server-side failure (e.g., 502 when both providers actually crashed)
+          const msg =
+            data?.error ||
+            data?.message ||
+            `A network error occurred (HTTP ${response.status}). Please try again.`;
+          throw new Error(msg);
+        }
+        console.log("🔍 Results:", data);
+        setResults(data);
+        // Call updateToken on successful background check
+        if (token) {
+          await updateToken(token);
+        }
+      } catch (error) {
+        console.error("Error performing background check:", error);
+        setApiError(
+          error instanceof Error
+            ? error.message
+            : "Something Unexpected Happened"
+        );
+      } finally {
+        setIsLoading(false);
       }
-      console.log("🔍 Results:", data);
-      setResults(data);
-      // Call updateToken on successful background check
-      if (token) {
-        await updateToken(token);
-      }
-    } catch (error) {
-      console.error("Error performing background check:", error);
-      setApiError(
-        error instanceof Error ? error.message : "Something Unexpected Happened"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
-  useEffect(() => {
+  /*   useEffect(() => {
     if (!token) {
       router.push("/404");
     } else {
@@ -181,7 +196,7 @@ export default function BackgroundCheck() {
     const retries = localStorage.getItem("retries");
     if (retries) setRetries(JSON.parse(retries));
   }, [token, verifyToken, router]);
-
+ */
   useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
