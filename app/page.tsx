@@ -26,6 +26,7 @@ export default function BackgroundCheck() {
     email: "",
     phone: "",
     street_address: "",
+    location: "",
     city: "",
     state: "",
     postal_code: "",
@@ -61,6 +62,7 @@ export default function BackgroundCheck() {
         !value &&
         key !== "city2" &&
         key !== "state2" &&
+        key !== "location" &&
         key !== "other_names" &&
         key !== "company" &&
         key !== "school" &&

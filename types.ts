@@ -5,6 +5,7 @@ export interface ProspectInfo {
   email: string;
   phone: string;
   street_address: string;
+  location?: string;
   city: string;
   state: string;
   postal_code: string;
@@ -84,5 +85,3 @@ export interface BackgroundCheckResult {
   riskLevel: "low" | "medium" | "high";
   overallRecommendation: string;
 }
-
-

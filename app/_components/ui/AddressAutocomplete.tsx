@@ -41,7 +41,6 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY as string,
     libraries: ["places"],
-    region: "ca",
   });
 
   // Canadian postal code validation
