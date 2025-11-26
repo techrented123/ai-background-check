@@ -74,7 +74,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 }) => {
   /* Hooks must always run in the same order — put them BEFORE any early return */
 
-
   // Email modal state
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
 
@@ -522,7 +521,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   /* Early returns AFTER all hooks */
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center py-6">
+      <div className="h-full flex flex-col items-center justify-start py-6">
         <p className="mb-4 text-gray-600">Generating background check…</p>
         <div className="animate-pulse w-full max-w-md">
           <div className="h-8 bg-gray-200 rounded mb-4" />
