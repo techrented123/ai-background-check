@@ -70,6 +70,7 @@ const getSystemInstructions = (formData: ProspectInfo) => {
    • Press mentions & news articles about this specific person  
    • Public social media profiles (LinkedIn, Facebook, Twitter/X, Instagram, TikTok, etc.)  
    • Location history (cities/regions/countries where this person has lived or worked)  
+   • Company registrations, directorships, or beneficial ownership that clearly match this person  
 
 Rules:
 - You MUST verify that each URL or location returned is about the correct person (matching name + at least one of: city/region/country, company, or school).
@@ -86,6 +87,10 @@ Rules:
   "location_history": [
     { "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "city": "", "state": "", "country": "" }
   ],
+  "company_registrations": [
+    { "name": "", "role": "", "link": "" }
+  ],
+  "short_summary": "",
   "research_log": [
     "short notes on what you searched and which sources you used"
   ]
@@ -191,12 +196,28 @@ Email: ${formData.email}
                   ],
                 },
               },
+              company_registrations: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    name: { type: "string" },
+                    role: { type: "string" },
+                    link: { type: "string" },
+                  },
+                  required: ["name", "link"],
+                },
+              },
+              short_summary: { type: "string" },
               research_log: { type: "array", items: { type: "string" } },
             },
             required: [
               "press_mentions",
               "social_media_profiles",
               "location_history",
+              "company_registrations",
+              "short_summary",
               "research_log",
             ],
           },
@@ -380,9 +401,10 @@ export async function POST(request: NextRequest) {
       data: null,
     };
 
+    console.log("🤖 GPT Result:", gpt);
     console.log("📋 PDL Result:", pdl);
-    const ok = Boolean(gpt?.ok || pdl?.ok);
 
+    const ok = Boolean(gpt?.ok || pdl?.ok);
     console.log("🎯 Final Combined Result - OK:", ok);
     console.log("🤖 GPT OK:", gpt?.ok);
     console.log("🔄 PDL OK:", pdl?.ok);
