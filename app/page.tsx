@@ -8,7 +8,7 @@ import { /* getToken,  */ updateToken } from "./actions";
 import { useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
- // const [, setActiveToken] = useState("");
+  // const [, setActiveToken] = useState("");
   const [retries, setRetries] = useState(0);
 
   const searchParams = useSearchParams();
@@ -225,6 +225,24 @@ export default function BackgroundCheck() {
   useEffect(() => {
     localStorage.setItem("retries", JSON.stringify(retries));
   }, [retries]);
+
+  // Warn the user if they try to reload/leave the page (so they don't lose attempts/data accidentally)
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // If nothing has been attempted yet, don't block navigation
+      if (!retries && !isLoading) return;
+
+      event.preventDefault();
+      // Most browsers ignore the custom string, but setting returnValue triggers the prompt
+      event.returnValue =
+        "Are you sure you want to leave this page? Your token is one-time use and could expire.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [retries, isLoading]);
 
   const hasResults = Boolean(results);
   const showResultsPanel = isLoading || hasResults;
