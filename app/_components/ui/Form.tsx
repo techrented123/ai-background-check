@@ -399,7 +399,53 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
 
       {formData.lengthOfStay === "no" && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label
+                htmlFor="street_address2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Previous Street Address
+              </label>
+              <AddressAutocomplete
+                name="street_address2"
+                value={formData.street_address2 || ""}
+                onChange={(value) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    street_address2: value,
+                  }));
+                  if (errors.street_address2) {
+                    toggleErrors("street_address2");
+                  }
+                }}
+                onAddressSelect={({
+                  street,
+                  city,
+                  province,
+                  postalCode,
+                  country,
+                }) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    street_address2: street,
+                    city2: city,
+                    state2: province,
+                    postal_code2: postalCode,
+                    country2: country,
+                  }));
+                  if (errors.street_address2) toggleErrors("street_address2");
+                  if (errors.city2) toggleErrors("city2");
+                  if (errors.state2) toggleErrors("state2");
+                  if (errors.postal_code2) toggleErrors("postal_code2");
+                  if (errors.country2) toggleErrors("country2");
+                }}
+                placeholder="Enter previous address"
+                error={errors.street_address2}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label
                 htmlFor="city2"
@@ -452,30 +498,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label
-                htmlFor="street_address2"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Previous Street Address
-              </label>
-              <input
-                type="text"
-                id="street_address2"
-                name="street_address2"
-                value={formData.street_address2 || ""}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border ${
-                  errors.street_address2 ? "border-red-500" : "border-gray-300"
-                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-              {errors.street_address2 && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.street_address2}
-                </p>
-              )}
-            </div>
-            <div>
-              <label
                 htmlFor="postal_code2"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
@@ -498,8 +520,6 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
                 </p>
               )}
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label
                 htmlFor="country2"
@@ -533,7 +553,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             htmlFor="company"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-             Company 
+            Company
           </label>
           <input
             type="text"
