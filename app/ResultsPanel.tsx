@@ -218,8 +218,17 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         }
       }
 
-      // Deduplicate PDL locations
-      base.location_history = Array.from(new Set(locationStrings));
+      // Deduplicate PDL locations (case / spacing insensitive)
+      const normalizeLocation = (label: string) =>
+        label.toLowerCase().replace(/\s+/g, " ").trim();
+
+      const seenPdlLocations = new Set<string>();
+      base.location_history = locationStrings.filter((label) => {
+        const key = normalizeLocation(label);
+        if (!key || seenPdlLocations.has(key)) return false;
+        seenPdlLocations.add(key);
+        return true;
+      });
     }
     // Enrich with GPT OSINT (press + social + location) if available
     const gptData = gpt?.ok ? gpt.data : null;
@@ -246,9 +255,22 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           })
           .filter(Boolean) as string[];
 
-        base.location_history = Array.from(
-          new Set([...(base.location_history as any[]), ...gptLocations])
-        );
+        // Merge GPT + PDL locations, deduplicating across both
+        const normalizeLocation = (label: string) =>
+          label.toLowerCase().replace(/\s+/g, " ").trim();
+
+        const seenLocations = new Set<string>();
+        const merged = [
+          ...(base.location_history as string[]),
+          ...gptLocations,
+        ].filter((label) => {
+          const key = normalizeLocation(label);
+          if (!key || seenLocations.has(key)) return false;
+          seenLocations.add(key);
+          return true;
+        });
+
+        base.location_history = merged;
       }
       if (Array.isArray(gptData.company_registrations)) {
         base.company_registrations = gptData.company_registrations;
@@ -478,7 +500,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   const isPdfProcessing =
     pdfState.status === "generating" || pdfState.status === "uploading";
   const pdfUploadError = pdfState.status === "error" ? pdfState.error : null;
-  console.log("pdfState", person,prospect,results,pdfState,foundResult);
+  console.log("pdfState", person, prospect, results, pdfState, foundResult);
   const handleDownloadPDF = React.useCallback(() => {
     if (!person || !prospect) return;
 

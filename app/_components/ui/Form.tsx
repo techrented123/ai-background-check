@@ -294,7 +294,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
             htmlFor="state"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Province/State
+            Province / State
           </label>
           <input
             type="text"
