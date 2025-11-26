@@ -59,7 +59,7 @@ export const Form: React.FC<BackgroundCheckFormProps> = ({
   };
   return (
     <form onSubmit={handleSubmit} className={`space-y-4 px-2.5 ]`}>
-      <div className="hidden md:flex justify-start items-center mb-6 ">
+      <div className="flex justify-center md:justify-start items-center mb-4 md:mb-6">
         <UserCheck className="h-6 w-6 text-[#293074] mr-2" />
         <p className="text-sm md:text-lg text-left font-semibold text-gray-800">
           Fill out the form below{" "}
