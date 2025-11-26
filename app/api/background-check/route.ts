@@ -64,141 +64,85 @@ function validateEmploymentData(employmentData: any[]): any[] {
 }
 
 const getSystemInstructions = (formData: ProspectInfo) => {
-  return `const instructions = You are a highly-skilled automated public‐profile investigator. When given a tenant’s details, you will:
-1. Perform a thorough web search (using Google as your primary source) to gather any available information (public or private).  
-2. Focus on these categories:
-   • Press mentions & news articles  
-   • Employment History
-   • Location History (City, State and Country)
-   • Court or legal filings worldwide 
-   • Public social media profiles (LinkedIn, Facebook, Twitter, Instagram)  
-   • Company registrations or board affiliations  
-   • Public comments, blog posts, forums, or other online activity  
-   • Anything else that may reflect positively or negatively on their character  
+  return `You are a highly-skilled automated public‐profile investigator. When given a tenant’s details, you will:
+1. Perform a thorough web search (using Google as your primary source) to gather any available information.  
+2. Focus STRICTLY on:
+   • Press mentions & news articles about this specific person  
+   • Public social media profiles (LinkedIn, Facebook, Twitter/X, Instagram, TikTok, etc.)  
+   • Location history (cities/regions/countries where this person has lived or worked)  
 
-3. Always verify that each URL returned is live and points to the correct person. **Some URLs returned in the past were incorrect**  
+Rules:
+- You MUST verify that each URL or location returned is about the correct person (matching name + at least one of: city/region/country, company, or school).
+- If you are not reasonably confident a hit is about this person, DO NOT include it.
+- If there are no verified items for a section, return an empty array for that section.
+- Output one JSON object only, with this structure (no extra commentary):
+{
+  "press_mentions": [
+    { "date": "YYYY-MM-DD", "topic": "", "description": "", "link": "" }
+  ],
+  "social_media_profiles": [
+    { "platform": "", "link": "" }
+  ],
+  "location_history": [
+    { "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "city": "", "state": "", "country": "" }
+  ],
+  "research_log": [
+    "short notes on what you searched and which sources you used"
+  ]
+}
 
-4. Return exactly one JSON object with these keys (no extra text):
-   {
-     "employment_history": [{ "start_date":"YYYY-MM-DD", "end_date":"YYYY-MM-DD", company:"", position:""}],
-     "location_history": [{ "start_date":"YYYY-MM-DD", city:"", state:"", country:""}],
-     "press_mentions": [ { "date":"YYYY-MM-DD", "topic":"", "description":"", "link":"" } ],
-     "legal_appearances": [ { "date":"YYYY-MM-DD", "title":"", "description":"", "location":"", "plaintiff":"", "link":"" } ],
-     "social_media_profiles": [ { "platform":"", "link":"" } ],
-     "company_registrations": [ { "name":"", "link":"" } ],
-     "public_comments": [ { "date":"YYYY-MM-DD", "platform":"", "content":"", "link":"" } ],
-     "others": [ { "note":"", "link":"","platform":"" } ],
-     "short_summary": ""
-   }
-
-- Use ISO date format (YYYY-MM-DD).  
-- If a section has no entries, use an empty array ("[]").  
-- Do **not** wrap the JSON in code fences or add any explanatory text.  
-- Only output valid JSON.
-
-Input format (as a user message):
+Input (about the person):
 Name: ${formData.firstName} ${formData.other_names || ""} ${formData.lastName}
-Location1: ${formData.city}, ${formData.state}  
-Email: <Email>  
+Location: ${formData.city}, ${formData.state}, ${formData.country}
 DateOfBirth: ${formData.dob}
-[Optional] Location2: formData.city2 && formData.state2
-      ?  ${formData.city2}, ${formData.state2}
-      : ""; 
-`;
-
-  /* const prevLoc =
-    formData.city2 && formData.state2
-      ? `• Previous location: ${formData.city2}, ${formData.state2}\n`
-      : "";
-  return `You are an automated public‐profile investigator. Search **all** accessible sources, using Google as your primary source for the target person below. 
-Target
-──────
-• Full name: ${formData.firstName} ${formData.other_names || ""} ${
-    formData.lastName
-  }
-• Aliases: ${formData.other_names || "None"}
-• DOB or age: ${formData.dob || "Unknown"}
-• Primary location: ${formData.city}, ${formData.state}
-• Email(s): ${formData.email}
-${prevLoc}
-Rules
-─────
-• Verify each finding with ≥2 anchors (e.g., name+city or name+email).
-• Neutral, factual; no guesses.
-• Output **one** JSON object only, no markdown/fences.
-• If a section has no verified hits, use [].
-• Add a brief research_log of queries/tools used.`; */
+Company: ${formData.company}
+School: ${formData.school}
+Email: ${formData.email}`;
 };
 
 async function fetchViaChatGPT(formData: ProspectInfo) {
   const apiKey = process.env.NEXT_PUBLIC_OPEN_AI_API_KEY;
+  if (!apiKey) {
+    console.error("Missing NEXT_PUBLIC_OPEN_AI_API_KEY");
+    return { ok: false, error: "Missing OpenAI API key" };
+  }
+
   const client = new OpenAI({ apiKey });
+
   const userInput = `
 Begin investigation:
 Name: ${formData.firstName} ${formData.other_names || ""} ${formData.lastName}
-Location 1: ${formData.city}, ${formData.state}
-${
-  formData.city2 && formData.state2
-    ? `Location 2: ${formData.city2}, ${formData.state2}`
-    : ""
-}
+Location: ${formData.city}, ${formData.state}, ${formData.country}
+Date of Birth: ${formData.dob || "Unknown"}
+Company: ${formData.company}
+School: ${formData.school}
 Email: ${formData.email}
-DOB: ${formData.dob || "Unknown"}
 `.trim();
+
   try {
-    // ✅ Single call: web search + strict JSON output
     const res = await client.responses.create({
-      model: "gpt-4.1", // supports Responses API + web_search
-      tools: [{ type: "web_search_preview" }], // enable browsing
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
       tool_choice: "auto",
-      max_output_tokens: 2000,
+      max_output_tokens: 1800,
       input: [
-        { role: "system", content: getSystemInstructions(formData) },
-        { role: "user", content: userInput },
+        {
+          role: "system",
+          content: getSystemInstructions(formData),
+        },
+        {
+          role: "user",
+          content: userInput,
+        },
       ],
       text: {
         format: {
           type: "json_schema",
-          name: "osint_report",
+          name: "osint_press_social_location",
           schema: {
             type: "object",
             additionalProperties: false,
             properties: {
-              employment_history: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    start_date: { type: "string" },
-                    company: { type: "string" },
-                    position: { type: "string" },
-                    end_date: { type: "string" },
-                  },
-                  required: ["start_date", "company", "position", "end_date"],
-                },
-              },
-              location_history: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    start_date: { type: "string" },
-                    end_date: { type: "string" },
-                    city: { type: "string" },
-                    state: { type: "string" },
-                    country: { type: "string" },
-                  },
-                  required: [
-                    "start_date",
-                    "city",
-                    "state",
-                    "country",
-                    "end_date",
-                  ],
-                },
-              },
               press_mentions: {
                 type: "array",
                 items: {
@@ -210,30 +154,7 @@ DOB: ${formData.dob || "Unknown"}
                     description: { type: "string" },
                     link: { type: "string" },
                   },
-                  required: ["topic", "link", "date", "description"],
-                },
-              },
-              legal_appearances: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    date: { type: "string" },
-                    title: { type: "string" },
-                    description: { type: "string" },
-                    location: { type: "string" },
-                    plaintiff: { type: "string" },
-                    link: { type: "string" },
-                  },
-                  required: [
-                    "date",
-                    "location",
-                    "plaintiff",
-                    "link",
-                    "title",
-                    "description",
-                  ],
+                  required: ["date", "topic", "description", "link"],
                 },
               },
               social_media_profiles: {
@@ -248,58 +169,34 @@ DOB: ${formData.dob || "Unknown"}
                   required: ["platform", "link"],
                 },
               },
-              company_registrations: {
+              location_history: {
                 type: "array",
                 items: {
                   type: "object",
                   additionalProperties: false,
                   properties: {
-                    name: { type: "string" },
-                    link: { type: "string" },
+                    start_date: { type: "string" },
+                    end_date: { type: "string" },
+                    city: { type: "string" },
+                    state: { type: "string" },
+                    country: { type: "string" },
                   },
-                  required: ["name", "link"],
+                  // OpenAI's json_schema requires 'required' to include every key in properties
+                  required: [
+                    "start_date",
+                    "end_date",
+                    "city",
+                    "state",
+                    "country",
+                  ],
                 },
               },
-              public_comments: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    date: { type: "string" },
-                    platform: { type: "string" },
-                    content: { type: "string" },
-                    link: { type: "string" },
-                  },
-                  required: ["date", "platform", "content", "link"],
-                },
-              },
-              others: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    note: { type: "string" },
-                    link: { type: "string" },
-                    platform: { type: "string" },
-                  },
-                  required: ["platform", "note", "link"],
-                },
-              },
-              short_summary: { type: "string" },
               research_log: { type: "array", items: { type: "string" } },
             },
             required: [
-              "employment_history",
-              "location_history",
               "press_mentions",
-              "legal_appearances",
               "social_media_profiles",
-              "company_registrations",
-              "public_comments",
-              "others",
-              "short_summary",
+              "location_history",
               "research_log",
             ],
           },
@@ -309,42 +206,11 @@ DOB: ${formData.dob || "Unknown"}
     });
 
     const output = res.output_text || "{}";
-    console.log("🔍 OpenAI Response:", output);
+    console.log("🔍 OpenAI OSINT Response:", output);
     const data = JSON.parse(output);
 
-    // Validate employment data to remove hallucinations
-    const validatedEmployment = validateEmploymentData(
-      data.employment_history || []
-    );
-    console.log(
-      `✨ Original employment entries: ${data.employment_history?.length || 0}`
-    );
-    console.log(
-      `✅ Validated employment entries: ${validatedEmployment.length}`
-    );
-
-    // Filter out filtered employment if validation removed too many
-    const finalData = {
-      ...data,
-      employment_history:
-        validatedEmployment.length > 0
-          ? validatedEmployment
-          : data.employment_history || [],
-    };
-
-    console.log("📊 Parsed OpenAI Data:", JSON.stringify(finalData, null, 2));
-    const foundPerson = Boolean(
-      finalData.company_registrations.length ||
-        finalData.social_media_profiles.length ||
-        finalData.employment_history.length ||
-        finalData.public_comments.length ||
-        finalData.legal_appearances.length ||
-        finalData.press_mentions.length
-    );
-
-    return { ok: true, data: { ...finalData, foundPerson } };
+    return { ok: true, data };
   } catch (err: any) {
-    // graceful fallback if web_search isn’t enabled on the account
     if (err?.status === 400 && /web_search/i.test(err?.message || "")) {
       return NextResponse.json(
         { error: "web_search tool not enabled for this account/model" },
@@ -498,340 +364,30 @@ export async function POST(request: NextRequest) {
         { error: "Bad Request. Missing body" },
         { status: 400 }
       );
-    const [gptSettled, pdlSettled] = await Promise.allSettled([
-      fetchViaChatGPT(formData),
-      fetchViaPDL(formData),
-    ]);
-    /*  const gpt3 = {
-      ok: true,
-      data: {
-        foundPerson: false,
-        employment_history: [
-             {
-            start_date: "2019-01-01",
-            company: "Outlier",
-            position: "Front-end Developer",
-            end_date: "2024-08-13",
-          },
-          {
-            start_date: "2019-01-01",
-            company: "KondarSoft",
-            position: "Commercial Consultant",
-            end_date: "2024-08-13",
-          }, 
-        ],
-        location_history: [
-          /*   {
-            start_date: "2019-01-01",
-            end_date: "2024-08-13",
-            city: "Vancouver",
-            state: "British Columbia",
-            country: "Canada",
-          }, 
-        ],
-        press_mentions: [],
-        legal_appearances: [],
-        social_media_profiles: [],
-        company_registrations: [],
-        public_comments: [],
-        others: [],
-        short_summary:
-          "Tambi Asawo is a front-end developer at Outlier and a commercial consultant at KondarSoft, based in Vancouver, British Columbia, Canada.",
-        research_log: [
-          "Searched for 'Tambi Asawo Vancouver BC'",
-          "Reviewed Uploadcare blog author page",
-          "Checked Contra profile for services and work history",
-          "Examined MobyGames profile for credits",
-          "Visited KondarSoft website for consultant information",
-        ],
-      },
-    }; */
 
-    const gpt =
-      gptSettled.status === "fulfilled"
-        ? gptSettled.value
-        : { ok: false, error: gptSettled.reason?.message || "OpenAI crashed" };
+    // 1) Call PDL to get a structured profile
+    const pdlResult = await fetchViaPDL(formData);
 
-    console.log("🤖 GPT Result:", gpt);
-    console.log("📊 GPT Settled Status:", gptSettled.status);
-    if (gptSettled.status === "rejected") {
-      console.log("❌ GPT Rejection Reason:", gptSettled.reason);
+    // 2) Only call GPT OSINT if PDL found a person
+    let gpt: any = { ok: false, error: "PDL did not find a person" };
+    if (pdlResult?.ok) {
+      gpt = await fetchViaChatGPT(formData);
     }
 
-    /*  const pdl3 = {
-      ok: true,
-      data: {
-        data: {
-          id: "X3BjH6b4XqAgcE43OGPMfg_0000",
-          full_name: "tambi asawo",
-          first_name: "tambi",
-          middle_initial: null,
-          middle_name: null,
-          last_initial: "a",
-          last_name: "asawo",
-          sex: "female",
-          birth_year: null,
-          birth_date: null,
-          linkedin_url: null,
-          linkedin_username: null,
-          linkedin_id: null,
-          facebook_url: null,
-          facebook_username: null,
-          facebook_id: null,
-          twitter_url: null,
-          twitter_username: null,
-          github_url: null,
-          github_username: null,
-          work_email: null,
-          personal_emails: [],
-          recommended_personal_email: null,
-          mobile_phone: null,
-          industry: "electrical/electronic manufacturing",
-          job_title: null,
-          job_title_role: null,
-          job_title_sub_role: null,
-          job_title_class: null,
-          job_title_levels: [],
-          job_company_id: null,
-          job_company_name: null,
-          job_company_website: null,
-          job_company_size: null,
-          job_company_founded: null,
-          job_company_industry: null,
-          job_company_linkedin_url: null,
-          job_company_linkedin_id: null,
-          job_company_facebook_url: null,
-          job_company_twitter_url: null,
-          job_company_location_name: null,
-          job_company_location_locality: null,
-          job_company_location_metro: null,
-          job_company_location_region: null,
-          job_company_location_geo: null,
-          job_company_location_street_address: null,
-          job_company_location_address_line_2: null,
-          job_company_location_postal_code: null,
-          job_company_location_country: null,
-          job_company_location_continent: null,
-          job_last_changed: null,
-          job_last_verified: null,
-          job_start_date: null,
-          location_name: "winnipeg, manitoba, canada",
-          location_locality: "winnipeg",
-          location_metro: null,
-          location_region: "manitoba",
-          location_country: "canada",
-          location_continent: "north america",
-          location_street_address: null,
-          location_address_line_2: null,
-          location_postal_code: null,
-          location_geo: "49.84,-97.12",
-          location_last_updated: null,
-          phone_numbers: [],
-          emails: [],
-          interests: [
-            "children",
-            "environment",
-            "health",
-            "poverty alleviation",
-            "science and technology",
-            "social services",
-          ],
-          skills: [],
-          location_names: ["winnipeg, manitoba, canada"],
-          regions: ["manitoba, canada"],
-          countries: ["canada"],
-          street_addresses: [],
-          experience: [
-            {
-              company: {
-                name: "university of manitoba",
-                size: "501-1000",
-                id: "naEjBJuZs2Bxz8l3nUedEw0IjLlg",
-                founded: 1877,
-                industry: "higher education",
-                location: {
-                  name: "winnipeg, manitoba, canada",
-                  locality: "winnipeg",
-                  region: "manitoba",
-                  metro: null,
-                  country: "canada",
-                  continent: "north america",
-                  street_address: null,
-                  address_line_2: null,
-                  postal_code: "r3t 2n2",
-                  geo: "49.84,-97.12",
-                },
-                linkedin_url: "linkedin.com/company/university-of-manitoba",
-                linkedin_id: "31403556",
-                facebook_url: null,
-                twitter_url: null,
-                website: null,
-              },
-              location_names: [],
-              end_date: "2014-06",
-              start_date: "2014-05",
-              title: {
-                name: "research student",
-                class: "services",
-                role: "education",
-                sub_role: "student",
-                levels: [],
-              },
-              is_primary: false,
-            },
-            {
-              company: {
-                name: "msi",
-                size: null,
-                id: null,
-                founded: null,
-                industry: null,
-                location: null,
-                linkedin_url: null,
-                linkedin_id: null,
-                facebook_url: null,
-                twitter_url: null,
-                website: null,
-              },
-              location_names: ["calgary, alberta, canada"],
-              end_date: "2013-08",
-              start_date: "2013-05",
-              title: {
-                name: "warehouse associate",
-                class: "services",
-                role: "fulfillment",
-                sub_role: "warehouse",
-                levels: [],
-              },
-              is_primary: false,
-            },
-            {
-              company: {
-                name: "university of manitoba",
-                size: "501-1000",
-                id: "naEjBJuZs2Bxz8l3nUedEw0IjLlg",
-                founded: 1877,
-                industry: "higher education",
-                location: {
-                  name: "winnipeg, manitoba, canada",
-                  locality: "winnipeg",
-                  region: "manitoba",
-                  metro: null,
-                  country: "canada",
-                  continent: "north america",
-                  street_address: null,
-                  address_line_2: null,
-                  postal_code: "r3t 2n2",
-                  geo: "49.84,-97.12",
-                },
-                linkedin_url: "linkedin.com/company/university-of-manitoba",
-                linkedin_id: "31403556",
-                facebook_url: null,
-                twitter_url: null,
-                website: null,
-              },
-              location_names: [],
-              end_date: null,
-              start_date: "2011-01",
-              title: {
-                name: "student",
-                class: "services",
-                role: "education",
-                sub_role: "student",
-                levels: [],
-              },
-              is_primary: false,
-            },
-          ],
-          education: [
-            {
-              school: {
-                name: "university of manitoba",
-                type: "post-secondary institution",
-                id: "fGOlVMNupjx3cjpHK3yiDw_0",
-                location: {
-                  name: "winnipeg, manitoba, canada",
-                  locality: "winnipeg",
-                  region: "manitoba",
-                  country: "canada",
-                  continent: "north america",
-                },
-                linkedin_url: "linkedin.com/school/umanitoba",
-                facebook_url: "facebook.com/umanitoba",
-                twitter_url: "twitter.com/umanitoba",
-                linkedin_id: "11692",
-                website: "umanitoba.ca",
-                domain: "umanitoba.ca",
-              },
-              degrees: ["bachelors"],
-              start_date: "2011",
-              end_date: "2016",
-              majors: [],
-              minors: [],
-              gpa: null,
-            },
-            {
-              school: {
-                name: "access high school",
-                type: "secondary school",
-                id: null,
-                location: null,
-                linkedin_url: null,
-                facebook_url: null,
-                twitter_url: null,
-                linkedin_id: null,
-                website: null,
-                domain: null,
-              },
-              degrees: [],
-              start_date: "2004",
-              end_date: "2010",
-              majors: [],
-              minors: [],
-              gpa: null,
-            },
-          ],
-          profiles: [
-            {
-              network: "linkedin",
-              id: "328933665",
-              url: "linkedin.com/in/tambi-asawo-1691ab92",
-              username: "tambi-asawo-1691ab92",
-            },
-          ],
-          dataset_version: "31.0",
-        },
-      },
-      match_score: 27,
-      matched_on: ["name"],
+    const pdl = pdlResult ?? {
+      ok: false,
+      error: "PDL crashed",
+      data: null,
     };
- */
-    const pdl =
-      pdlSettled.status === "fulfilled"
-        ? pdlSettled.value
-        : {
-            ok: false,
-            error: pdlSettled.reason?.message || "PDL crashed",
-            data: null,
-          };
 
     console.log("📋 PDL Result:", pdl);
-    console.log("📊 PDL Settled Status:", pdlSettled.status);
-    if (pdlSettled.status === "rejected") {
-      console.log("❌ PDL Rejection Reason:", pdlSettled.reason);
-    }
-
     const ok = Boolean(gpt?.ok || pdl?.ok);
 
     console.log("🎯 Final Combined Result - OK:", ok);
-    console.log("🔄 GPT OK:", gpt?.ok);
+    console.log("🤖 GPT OK:", gpt?.ok);
     console.log("🔄 PDL OK:", pdl?.ok);
 
-    // Only treat as server error if BOTH providers actually crashed/rejected
-    const bothCrashed =
-      gptSettled.status === "rejected" && pdlSettled.status === "rejected";
-
-    const status = bothCrashed ? 502 : 200;
+    const status = ok ? 200 : 502;
     const finalResponse = {
       ok,
       gpt,
