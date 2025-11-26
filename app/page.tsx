@@ -293,7 +293,7 @@ export default function BackgroundCheck() {
                 <button
                   type="button"
                   onClick={() => setIsFormCollapsed((prev) => !prev)}
-                  className="inline-flex items-center space-x-1 rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-indigo-500 px-3 py-1.5 text-xs md:text-sm text-white shadow-sm hover:from-indigo-500 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition-all duration-200"
+                  className="cursor-pointer inline-flex items-center space-x-1 rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-xs md:text-sm text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 transition-all duration-200"
                   aria-label={
                     isFormCollapsed
                       ? "Expand form panel"
