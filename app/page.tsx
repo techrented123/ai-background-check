@@ -4,16 +4,16 @@ import { ProspectInfo, BackgroundCheckResult } from "@/types";
 import ResultsPanel from "./ResultsPanel";
 import { Form } from "./_components/ui/Form";
 import Header from "./_components/ui/Header";
-import { getToken, updateToken } from "./actions";
-import { useRouter, useSearchParams } from "next/navigation";
+import { /* getToken,  */ updateToken } from "./actions";
+import { useSearchParams } from "next/navigation";
 
 export default function BackgroundCheck() {
-  const [, setActiveToken] = useState("");
+ // const [, setActiveToken] = useState("");
   const [retries, setRetries] = useState(0);
 
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const router = useRouter();
+  //const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -150,7 +150,7 @@ export default function BackgroundCheck() {
     [showToast]
   );
 
-  const verifyToken = useCallback(
+  /* const verifyToken = useCallback(
     async (token: string | null) => {
       const activeToken = await getToken(token as string);
       if (!activeToken || activeToken.product !== "ai-check")
@@ -160,7 +160,7 @@ export default function BackgroundCheck() {
       }
     },
     [router]
-  );
+  ); */
 
   const handleSubmit = useCallback(
     async (prospectInfo: ProspectInfo) => {
